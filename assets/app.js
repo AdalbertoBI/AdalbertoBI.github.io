@@ -24,6 +24,7 @@
   const loginForm = document.getElementById('loginForm');
   const loginBtn = document.getElementById('loginBtn');
   const statusEl = document.getElementById('status');
+  const configAlert = document.getElementById('configAlert');
   
   // WhatsApp elements
   const displayUser = document.getElementById('displayUser');
@@ -94,6 +95,19 @@
     }
   }
 
+  function showConfigAlert() {
+    if (configAlert) {
+      configAlert.style.display = 'block';
+      setStatus('Problema de conexão com servidores locais', 'error');
+    }
+  }
+
+  function hideConfigAlert() {
+    if (configAlert) {
+      configAlert.style.display = 'none';
+    }
+  }
+
   function getContactName(chatId) {
     if (chatId.endsWith('@g.us')) {
       return 'Grupo';
@@ -138,6 +152,7 @@
       }
     } catch (error) {
       console.log('Servidor não acessível:', error);
+      showConfigAlert();
       return false;
     }
   }
@@ -205,6 +220,16 @@
     socket.on('disconnect', () => {
       console.log('🔌 WebSocket desconectado');
       updateConnectionStatus('disconnected', 'Desconectado');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.log('❌ Erro de conexão WebSocket:', error);
+      showConfigAlert();
+    });
+
+    socket.on('error', (error) => {
+      console.log('❌ Erro WebSocket:', error);
+      showConfigAlert();
     });
 
     socket.on('whatsapp:status', (data) => {
@@ -545,7 +570,12 @@
       
       await login(username, password);
     } catch (err) {
-      setStatus(err.message || 'Erro ao autenticar', 'error');
+      const errorMsg = err.message || 'Erro ao autenticar';
+      if (errorMsg.includes('fetch') || errorMsg.includes('NetworkError') || err.name === 'TypeError') {
+        showConfigAlert();
+      } else {
+        setStatus(errorMsg, 'error');
+      }
     } finally {
       setLoading(false);
     }
