@@ -3,17 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login - WhatIntegra</title>
+    <title>WhatIntegra - WhatsApp Web</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./assets/styles.css" />
   </head>
   <body>
-    <main class="container">
-      <section class="card">
-        <h1>Entrar</h1>
-        <p class="muted">A autenticação é validada localmente na sua máquina.</p>
+    <!-- Tela de Login -->
+    <main id="loginScreen" class="login-container">
+      <section class="login-card">
+        <h1>🚀 WhatIntegra</h1>
+        <p class="login-subtitle">Acesse seu WhatsApp Web de qualquer lugar</p>
 
         <form id="loginForm">
           <label for="username">Usuário</label>
@@ -30,20 +31,124 @@
         <details class="help">
           <summary>Como funciona?</summary>
           <ul>
-            <li>Esta página é hospedada no GitHub Pages.</li>
-            <li>O formulário envia as credenciais para <code>http://127.0.0.1:8765/api/login</code>.</li>
-            <li>Um servidor local (Node.js) valida usuário e senha em um arquivo local (<code>data/users.json</code>).</li>
+            <li>WhatsApp Web compartilhado através de servidor local</li>
+            <li>Sessão protegida na sua máquina</li>
+            <li>Acesso de qualquer dispositivo após autenticação</li>
           </ul>
         </details>
       </section>
-
-      <section id="app" class="card hidden">
-        <h2>Bem-vindo(a) <span id="displayUser"></span> 👋</h2>
-        <p class="muted">Login validado com sucesso pela sua máquina local.</p>
-        <button id="logoutBtn" class="secondary">Sair</button>
-      </section>
     </main>
 
+    <!-- Interface WhatsApp Web -->
+    <main id="whatsappScreen" class="whatsapp-container hidden">
+      <!-- Header -->
+      <header class="whatsapp-header">
+        <div class="header-left">
+          <h1>🚀 WhatIntegra</h1>
+          <div class="connection-status" id="connectionStatus">
+            <span class="status-dot"></span>
+            <span id="statusText">Conectando...</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <span id="displayUser" class="username"></span>
+          <button id="restartBtn" class="btn-icon" title="Reiniciar WhatsApp">🔄</button>
+          <button id="logoutBtn" class="btn-icon" title="Sair">🚪</button>
+        </div>
+      </header>
+
+      <!-- QR Code Screen -->
+      <div id="qrScreen" class="qr-screen">
+        <div class="qr-container">
+          <h2>📱 Conecte seu WhatsApp</h2>
+          <p>Escaneie o código QR com seu celular</p>
+          <div id="qrCode" class="qr-code"></div>
+          <div class="qr-instructions">
+            <ol>
+              <li>Abra o WhatsApp no seu celular</li>
+              <li>Vá em <strong>Menu > WhatsApp Web</strong></li>
+              <li>Aponte a câmera para este código</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main WhatsApp Interface -->
+      <div id="mainInterface" class="main-interface hidden">
+        <!-- Sidebar com conversas -->
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <h3>Conversas</h3>
+            <div class="search-box">
+              <input type="text" id="searchChats" placeholder="🔍 Buscar conversas..." />
+            </div>
+          </div>
+          <div class="chats-list" id="chatsList">
+            <div class="loading-chats">
+              <div class="spinner"></div>
+              <span>Carregando conversas...</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Área de chat -->
+        <section class="chat-area">
+          <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-content">
+              <h2>💬 WhatIntegra</h2>
+              <p>Selecione uma conversa para começar</p>
+              <div class="feature-list">
+                <div class="feature">✅ WhatsApp Web sincronizado</div>
+                <div class="feature">🔄 Tempo real para múltiplos usuários</div>
+                <div class="feature">🔒 Dados protegidos localmente</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-container hidden" id="chatContainer">
+            <!-- Header do chat -->
+            <div class="chat-header">
+              <div class="contact-info">
+                <div class="contact-avatar" id="chatAvatar">👤</div>
+                <div class="contact-details">
+                  <h4 id="chatName">Selecione um chat</h4>
+                  <span class="contact-status" id="chatStatus">online</span>
+                </div>
+              </div>
+              <div class="chat-actions">
+                <button class="btn-icon" title="Buscar mensagens">🔍</button>
+                <button class="btn-icon" title="Mais opções">⋮</button>
+              </div>
+            </div>
+
+            <!-- Mensagens -->
+            <div class="messages-area" id="messagesArea">
+              <div class="loading-messages">
+                <div class="spinner"></div>
+                <span>Carregando mensagens...</span>
+              </div>
+            </div>
+
+            <!-- Input de mensagem -->
+            <div class="message-input-area">
+              <div class="message-input-container">
+                <button class="btn-icon" title="Anexar">📎</button>
+                <input 
+                  type="text" 
+                  id="messageInput" 
+                  placeholder="Digite uma mensagem..." 
+                  maxlength="1000"
+                />
+                <button id="sendBtn" class="btn-send" title="Enviar">📤</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="./assets/app.js"></script>
   </body>
-  </html>
+</html>
