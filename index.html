@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login - WhatIntegra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="card">
+        <h1>Entrar</h1>
+        <p class="muted">A autenticação é validada localmente na sua máquina.</p>
+
+        <form id="loginForm">
+          <label for="username">Usuário</label>
+          <input id="username" name="username" autocomplete="username" required />
+
+          <label for="password">Senha</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <button type="submit" id="loginBtn">Entrar</button>
+        </form>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <details class="help">
+          <summary>Como funciona?</summary>
+          <ul>
+            <li>Esta página é hospedada no GitHub Pages.</li>
+            <li>O formulário envia as credenciais para <code>http://127.0.0.1:8765/api/login</code>.</li>
+            <li>Um servidor local (Node.js) valida usuário e senha em um arquivo local (<code>data/users.json</code>).</li>
+          </ul>
+        </details>
+      </section>
+
+      <section id="app" class="card hidden">
+        <h2>Bem-vindo(a) <span id="displayUser"></span> 👋</h2>
+        <p class="muted">Login validado com sucesso pela sua máquina local.</p>
+        <button id="logoutBtn" class="secondary">Sair</button>
+      </section>
+    </main>
+
+    <script src="./assets/app.js"></script>
+  </body>
+  </html>
