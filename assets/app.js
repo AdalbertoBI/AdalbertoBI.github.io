@@ -1,7 +1,7 @@
 (() => {
   // Configurações
   const API_URL = 'http://127.0.0.1:8765/api';
-  const SOCKET_URL = 'http://127.0.0.1:8765';
+  const WHATSAPP_URL = 'http://127.0.0.1:3001';
   const isGitHubPages = location.hostname.includes('github.io');
 
   // Estado da aplicação
@@ -192,7 +192,7 @@
       socket.disconnect();
     }
 
-    socket = io(SOCKET_URL, {
+    socket = io(WHATSAPP_URL, {
       transports: ['websocket', 'polling'],
       timeout: 5000
     });
