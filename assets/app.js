@@ -1,5 +1,34 @@
-(() => {
-  const form = document.getElementById('loginForm');
+(() => {  const isGitHubPages = location.hostname.includes('github.io');
+
+  function setStatus(msg, type = '') {
+    statusEl.textContent = msg || '';
+    statusEl.className = 'status';
+    if (type) statusEl.classList.add(type);
+  }
+
+  function setLoading(loading) {
+    loginBtn.disabled = loading;
+    loginBtn.textContent = loading ? 'Aguarde...' : 'Entrar';
+  }
+
+  function showMixedContentWarning() {
+    if (isGitHubPages) {
+      const warningMsg = document.createElement('div');
+      warningMsg.innerHTML = `
+        <strong>⚠️ Configuração Necessária</strong><br>
+        Para usar o login, você precisa primeiro autorizar o servidor local:<br><br>
+        1. <a href="http://127.0.0.1:8765/" target="_blank" style="color: #f59e0b;">Clique aqui para abrir o servidor local</a><br>
+        2. Se aparecer um aviso de segurança, clique em "Avançado" → "Continuar"<br>
+        3. Volte aqui e tente fazer login novamente<br><br>
+        <small>Isso é necessário porque o GitHub Pages usa HTTPS e o servidor local usa HTTP.</small>
+      `;
+      statusEl.innerHTML = '';
+      statusEl.appendChild(warningMsg);
+      statusEl.className = 'status warning';
+      return true;
+    }
+    return false;
+  }m = document.getElementById('loginForm');
   const statusEl = document.getElementById('status');
   const loginBtn = document.getElementById('loginBtn');
   const appSection = document.getElementById('app');
@@ -53,6 +82,13 @@
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Verificar se é GitHub Pages e mostrar aviso
+    if (showMixedContentWarning()) {
+      setLoading(false);
+      return;
+    }
+    
     setStatus('Validando credenciais…');
     setLoading(true);
     try {
