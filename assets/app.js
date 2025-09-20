@@ -872,21 +872,22 @@ function initializeEmojiPicker() {
     try {
       console.log('🔐 Tentando login...', { username, API_URL });
       
-      // Verificar se estamos no GitHub Pages tentando acessar HTTP local
+      // Verificar se estamos no GitHub Pages tentando acessar HTTPS local
       if (isGitHub) {
-        console.log('⚠️ Executando no GitHub Pages - Mixed Content pode ser bloqueado');
-        setStatus('⚠️ Rodando no GitHub Pages: Você precisa autorizar os servidores HTTPS primeiro!', 'warning');
+        console.log('⚠️ Executando no GitHub Pages - Verificando servidores HTTPS...');
         
-        // Mostrar instruções específicas
-        showConfigAlert();
-        
-        // Tentar redirecionar para página de setup se não tiver sido feito
+        // Verificar se os servidores foram autorizados
         if (!localStorage.getItem('servers_authorized')) {
-          console.log('🔧 Redirecionando para página de configuração...');
+          console.log('🔧 Servidores HTTPS não foram autorizados ainda');
+          setStatus('🛠️ Redirecionando para configuração de HTTPS...', 'warning');
+          
           setTimeout(() => {
             window.location.href = './setup.html';
-          }, 2000);
+          }, 1500);
           return;
+        } else {
+          console.log('✅ Servidores HTTPS já foram autorizados');
+          setStatus('🔒 Conectando via HTTPS seguro...', 'info');
         }
       }
       
@@ -930,15 +931,22 @@ function initializeEmojiPicker() {
       // Tratar diferentes tipos de erro
       if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
         if (isGitHub) {
-          setStatus('❌ Mixed Content bloqueado! Acesse setup.html para autorizar os servidores HTTPS primeiro.', 'error');
-          showConfigAlert();
+          console.error('🔒 Mixed Content Error - HTTPS não autorizado');
+          setStatus('❌ Servidores HTTPS não autorizados! Redirecionando para setup...', 'error');
+          
+          // Remover flag de autorização se houver erro
+          localStorage.removeItem('servers_authorized');
+          
+          setTimeout(() => {
+            window.location.href = './setup.html';
+          }, 2000);
         } else {
-          throw new Error('Servidor não acessível. Verifique se o servidor de autenticação está rodando em ' + API_URL.replace('/api', ''));
+          setStatus('❌ Servidor não acessível. Verifique se os servidores estão rodando.', 'error');
         }
-      } else if (err.name === 'TypeError' && err.message.includes('NetworkError')) {
-        throw new Error('Erro de rede. Verifique sua conexão e se o servidor está ativo.');
+      } else if (err.message.includes('NetworkError') || err.message.includes('CORS')) {
+        setStatus('❌ Erro de rede ou CORS. Verifique a configuração dos servidores.', 'error');
       } else {
-        throw new Error(err.message || 'Erro ao autenticar');
+        setStatus(err.message || 'Erro ao autenticar', 'error');
       }
     }
   }

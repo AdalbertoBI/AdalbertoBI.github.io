@@ -265,6 +265,10 @@
         
         function checkBoth() {
             if (authOk && whatsappOk) {
+                // Marcar servidores como autorizados
+                localStorage.setItem('servers_authorized', 'true');
+                console.log('✅ Servidores HTTPS autorizados e marcados no localStorage');
+                
                 showStatus('✅ Todos os servidores autorizados! Você pode voltar ao WhatIntegra.', true);
             }
         }
@@ -280,6 +284,10 @@
                 fetch(AUTH_URL).then(() => { authOk = true; }),
                 fetch(WHATSAPP_URL).then(() => { whatsappOk = true; })
             ]).then(() => {
+                // Marcar servidores como autorizados
+                localStorage.setItem('servers_authorized', 'true');
+                console.log('✅ Teste de conexão bem-sucedido - Servidores marcados como autorizados');
+                
                 showStatus('✅ Conexão estabelecida com sucesso!', true);
             }).catch(() => {
                 showStatus('❌ Falha na conexão. Certifique-se de que os servidores estão rodando e foram autorizados.', false);
