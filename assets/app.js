@@ -39,7 +39,6 @@
   const sendBtn = document.getElementById('sendBtn');
   const chatName = document.getElementById('chatName');
   const chatStatus = document.getElementById('chatStatus');
-  const restartBtn = document.getElementById('restartBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
   // === UTILITY FUNCTIONS ===
@@ -472,35 +471,6 @@
     }
   }
 
-  async function restartWhatsApp() {
-    if (!currentToken) return;
-    
-    try {
-      setLoading(true, restartBtn);
-      console.log('🔄 Reiniciando WhatsApp via:', `${WHATSAPP_URL}/api/whatsapp/restart`);
-      
-      const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/restart`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${currentToken}` }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        console.log('✅ WhatsApp restart solicitado:', data);
-        updateConnectionStatus('connecting', 'Reiniciando...');
-        showQRScreen();
-      } else {
-        console.error('❌ Erro ao reiniciar WhatsApp:', res.status, res.statusText);
-        updateConnectionStatus('disconnected', 'Erro ao reiniciar');
-      }
-    } catch (error) {
-      console.error('❌ Erro ao reiniciar WhatsApp:', error);
-      updateConnectionStatus('disconnected', 'Erro de conexão');
-    } finally {
-      setLoading(false, restartBtn);
-    }
-  }
-
   // === CHAT HISTORY MANAGEMENT ===
 
   async function loadInitialMessageHistory() {
@@ -915,7 +885,6 @@
   });
 
   // WhatsApp controls
-  restartBtn?.addEventListener('click', restartWhatsApp);
   logoutBtn?.addEventListener('click', logout);
 
   // Message input
