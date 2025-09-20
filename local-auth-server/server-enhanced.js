@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -266,7 +265,7 @@ app.post('/api/login', async (req, res) => {
 // JWT verification middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
   
   if (!token) {
     return res.status(401).json({ error: 'Token de acesso requerido' });
