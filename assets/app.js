@@ -856,7 +856,8 @@ function initializeEmojiPicker() {
 
   // === AUTHENTICATION ===
 
-  async function trySession() {
+  // Funções auxiliares para reduzir complexidade cognitiva
+  function validateStoredSession() {
     const user = localStorage.getItem('wi_user');
     const token = localStorage.getItem('wi_token');
     
@@ -868,8 +869,64 @@ function initializeEmojiPicker() {
         userValue: user ? `${user.substring(0, 5)}***` : 'null',
         tokenValue: token ? `${token.substring(0, 10)}***` : 'null'
       });
-      return false;
+      return null;
     }
+    
+    return { user, token };
+  }
+
+  async function parseSessionResponse(response) {
+    try {
+      const responseText = await response.text();
+      console.log('📄 Resposta da sessão (texto):', responseText);
+      const sessionData = responseText ? JSON.parse(responseText) : {};
+      console.log('� Dados da sessão parseados:', sessionData);
+      return sessionData;
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear resposta da sessão:', parseError);
+      return {};
+    }
+  }
+
+  async function parseErrorResponse(response) {
+    try {
+      const errorText = await response.text();
+      console.log('📄 Resposta de erro (texto):', errorText);
+      const errorData = errorText ? JSON.parse(errorText) : {};
+      console.log('📊 Dados do erro parseados:', errorData);
+      return errorData;
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear resposta de erro:', parseError);
+      return {};
+    }
+  }
+
+  function handleSessionError(error) {
+    console.error('❌ Erro detalhado ao verificar sessão:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
+    
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      console.error('🌐 Falha de rede ao verificar sessão - possíveis causas:');
+      console.error('   1. Servidor de autenticação não está rodando');
+      console.error('   2. Problema de conectividade');
+      console.error('   3. CORS bloqueado');
+      console.error('   4. Certificado SSL rejeitado');
+    }
+    
+    console.log('⚠️ Servidor não acessível durante verificação de sessão');
+    console.log('� Exibindo alerta de configuração para o usuário');
+    showConfigAlert();
+  }
+
+  async function trySession() {
+    const sessionData = validateStoredSession();
+    if (!sessionData) return false;
+    
+    const { user, token } = sessionData;
     
     try {
       console.log('🔄 Verificando sessão armazenada para:', user);
@@ -892,61 +949,25 @@ function initializeEmojiPicker() {
       });
       
       if (res.ok) {
-        let sessionData = {};
-        try {
-          const responseText = await res.text();
-          console.log('📄 Resposta da sessão (texto):', responseText);
-          sessionData = responseText ? JSON.parse(responseText) : {};
-          console.log('📊 Dados da sessão parseados:', sessionData);
-        } catch (parseError) {
-          console.error('❌ Erro ao parsear resposta da sessão:', parseError);
-        }
-        
+        await parseSessionResponse(res);
         currentUser = user;
         currentToken = token;
         console.log('✅ Sessão válida restaurada para:', user);
         console.log('✅ Estado atual:', { currentUser, hasCurrentToken: !!currentToken });
         showWhatsAppInterface();
         return true;
-      } else {
-        console.log('❌ Sessão inválida - Status:', res.status);
-        console.log('❌ Motivo da invalidação:', res.statusText);
-        
-        let errorData = {};
-        try {
-          const errorText = await res.text();
-          console.log('📄 Resposta de erro (texto):', errorText);
-          errorData = errorText ? JSON.parse(errorText) : {};
-          console.log('📊 Dados do erro parseados:', errorData);
-        } catch (parseError) {
-          console.error('❌ Erro ao parsear resposta de erro:', parseError);
-        }
-        
-        console.log('🧹 Removendo dados de sessão inválida do localStorage');
-        localStorage.removeItem('wi_user');
-        localStorage.removeItem('wi_token');
-        return false;
       }
+      
+      console.log('❌ Sessão inválida - Status:', res.status);
+      console.log('❌ Motivo da invalidação:', res.statusText);
+      await parseErrorResponse(res);
+      console.log('🧹 Removendo dados de sessão inválida do localStorage');
+      localStorage.removeItem('wi_user');
+      localStorage.removeItem('wi_token');
+      return false;
+      
     } catch (error) {
-      console.error('❌ Erro detalhado ao verificar sessão:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        cause: error.cause
-      });
-      
-      // Logs específicos por tipo de erro
-      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        console.error('🌐 Falha de rede ao verificar sessão - possíveis causas:');
-        console.error('   1. Servidor de autenticação não está rodando');
-        console.error('   2. Problema de conectividade');
-        console.error('   3. CORS bloqueado');
-        console.error('   4. Certificado SSL rejeitado');
-      }
-      
-      console.log('⚠️ Servidor não acessível durante verificação de sessão');
-      console.log('🔧 Exibindo alerta de configuração para o usuário');
-      showConfigAlert();
+      handleSessionError(error);
       return false;
     }
   }
@@ -2040,13 +2061,12 @@ function initializeEmojiPicker() {
       } else {
         console.log('💬 Nova mensagem ENVIADA no chat ativo');
       }
+    } else if (!message.fromMe) {
+      // Notificação para chat não ativo - mensagem recebida
+      console.log(`💬 Nova mensagem RECEBIDA de: ${getContactName(chatId)}`);
     } else {
-      // Notificação para chat não ativo
-      if (!message.fromMe) {
-        console.log(`💬 Nova mensagem RECEBIDA de: ${getContactName(chatId)}`);
-      } else {
-        console.log(`💬 Nova mensagem ENVIADA para: ${getContactName(chatId)}`);
-      }
+      // Notificação para chat não ativo - mensagem enviada
+      console.log(`💬 Nova mensagem ENVIADA para: ${getContactName(chatId)}`);
     }
 
     // Update chat list (move to top and update last message)
