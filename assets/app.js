@@ -218,14 +218,22 @@
       socket.disconnect();
     }
 
+    console.log('🔌 Conectando WebSocket para:', WHATSAPP_URL);
+
     socket = io(WHATSAPP_URL, {
       transports: ['websocket', 'polling'],
       timeout: 5000
     });
 
     socket.on('connect', () => {
-      console.log('✅ WebSocket conectado');
+      console.log('✅ WebSocket conectado ao:', WHATSAPP_URL);
       updateConnectionStatus('connecting', 'Conectando WhatsApp...');
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 WebSocket desconectado:', reason);
+      updateConnectionStatus('disconnected', 'Desconectado');
+      showConfigAlert();
     });
 
     socket.on('disconnect', () => {
@@ -308,7 +316,27 @@
   }
 
   function showQRCode(qrDataUrl) {
-    qrCodeEl.innerHTML = `<img src="${qrDataUrl}" alt="QR Code WhatsApp" style="width: 256px; height: 256px;">`;
+    if (!qrDataUrl) {
+      console.error('❌ QR code data URL está vazio');
+      return;
+    }
+    
+    console.log('🔍 Exibindo QR Code:', qrDataUrl.substring(0, 50) + '...');
+    
+    if (!qrCodeEl) {
+      console.error('❌ Elemento qrCode não encontrado');
+      return;
+    }
+    
+    qrCodeEl.innerHTML = `<img src="${qrDataUrl}" alt="QR Code WhatsApp" style="width: 256px; height: 256px; display: block;">`;
+    console.log('✅ QR Code inserido no DOM');
+    
+    // Verificar se a imagem carregou
+    const img = qrCodeEl.querySelector('img');
+    if (img) {
+      img.onload = () => console.log('✅ QR Code imagem carregada');
+      img.onerror = () => console.error('❌ Erro ao carregar imagem QR Code');
+    }
   }
 
   async function restartWhatsApp() {
@@ -545,8 +573,22 @@
   }
 
   function showQRScreen() {
+    console.log('📱 Mostrando tela QR');
+    
+    if (!qrScreen) {
+      console.error('❌ Elemento qrScreen não encontrado');
+      return;
+    }
+    
+    if (!mainInterface) {
+      console.error('❌ Elemento mainInterface não encontrado');
+      return;
+    }
+    
     qrScreen.classList.remove('hidden');
     mainInterface.classList.add('hidden');
+    
+    console.log('✅ Tela QR visível, interface principal oculta');
   }
 
   function showMainInterface() {
