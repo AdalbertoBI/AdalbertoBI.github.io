@@ -1,45 +1,681 @@
-(() => {
-  // Configurações
-  const isGitHubPages = location.hostname.includes('github.io');
-  
-  // URLs baseadas no ambiente
-  const API_URL = isGitHubPages ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
-  const WHATSAPP_URL = isGitHubPages ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
+// WhatIntegra - WhatsApp Web Integration
+// Configurações
+const isGitHubPages = location.hostname.includes('github.io');
 
-  // Estado da aplicação
-  let socket = null;
-  let currentUser = null;
-  let currentToken = null;
-  let currentChat = null;
-  let chats = [];
-  let messages = {};
+// URLs baseadas no ambiente
+const API_URL = isGitHubPages ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
+const WHATSAPP_URL = isGitHubPages ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
 
-  // Elementos DOM
-  const loginScreen = document.getElementById('loginScreen');
-  const whatsappScreen = document.getElementById('whatsappScreen');
-  const qrScreen = document.getElementById('qrScreen');
-  const mainInterface = document.getElementById('mainInterface');
-  const welcomeScreen = document.getElementById('welcomeScreen');
-  const chatContainer = document.getElementById('chatContainer');
-  
-  // Login elements
-  const loginForm = document.getElementById('loginForm');
-  const loginBtn = document.getElementById('loginBtn');
-  const statusEl = document.getElementById('status');
-  const configAlert = document.getElementById('configAlert');
-  
-  // WhatsApp elements
-  const displayUser = document.getElementById('displayUser');
-  const connectionStatus = document.getElementById('connectionStatus');
-  const statusText = document.getElementById('statusText');
-  const qrCodeEl = document.getElementById('qrCode');
-  const chatsListEl = document.getElementById('chatsList');
-  const messagesArea = document.getElementById('messagesArea');
-  const messageInput = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const chatName = document.getElementById('chatName');
-  const chatStatus = document.getElementById('chatStatus');
-  const logoutBtn = document.getElementById('logoutBtn');
+// Estado da aplicação
+let socket = null;
+let currentUser = null;
+let currentToken = null;
+let currentChat = null;
+let chats = [];
+let messages = {};
+
+// Elementos DOM
+const loginScreen = document.getElementById('loginScreen');
+const whatsappScreen = document.getElementById('whatsappScreen');
+const qrScreen = document.getElementById('qrScreen');
+const mainInterface = document.getElementById('mainInterface');
+const welcomeScreen = document.getElementById('welcomeScreen');
+const chatContainer = document.getElementById('chatContainer');
+
+// Login elements
+const loginForm = document.getElementById('loginForm');
+const loginBtn = document.getElementById('loginBtn');
+const statusEl = document.getElementById('status');
+const configAlert = document.getElementById('configAlert');
+
+// WhatsApp elements
+const displayUser = document.getElementById('displayUser');
+const connectionStatus = document.getElementById('connectionStatus');
+const statusText = document.getElementById('statusText');
+const qrCodeEl = document.getElementById('qrCode');
+const chatsListEl = document.getElementById('chatsList');
+const messagesArea = document.getElementById('messagesArea');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const chatName = document.getElementById('chatName');
+const chatStatus = document.getElementById('chatStatus');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// Emoji elements
+const emojiBtn = document.getElementById('emojiBtn');
+const emojiPicker = document.getElementById('emojiPicker');
+const emojiGrid = document.getElementById('emojiGrid');
+
+// File attachment elements
+const attachBtn = document.getElementById('attachBtn');
+const fileInput = document.getElementById('fileInput');
+
+// Typing indicator elements
+const typingIndicator = document.getElementById('typingIndicator');
+const typingText = document.getElementById('typingText');
+
+// === EMOJI SYSTEM ===
+
+const emojiCategories = {
+    people: [
+      '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
+      '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
+      '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠',
+      '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥',
+      '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐',
+      '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕'
+    ],
+    nature: [
+      '🌿', '🍀', '🍃', '🍂', '🍁', '🌾', '🌱', '🌲', '🌳', '🌴', '🌵', '🌶️', '🍄', '🌰', '🌹', '🌺',
+      '🌻', '🌼', '🌷', '🌸', '💐', '🏵️', '🌿', '🍀', '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+      '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣',
+      '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟',
+      '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠'
+    ],
+    food: [
+      '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆',
+      '🥑', '🥦', '🥬', '🥒', '🌶️', '🌽', '🥕', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨',
+      '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🥪',
+      '🥙', '🧆', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤',
+      '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮'
+    ],
+    activities: [
+      '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍',
+      '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️', '🥌', '🎿',
+      '⛷️', '🏂', '🪂', '🏋️‍♀️', '🏋️‍♂️', '🤼‍♀️', '🤼‍♂️', '🤸‍♀️', '🤸‍♂️', '⛹️‍♀️', '⛹️‍♂️', '🤾‍♀️', '🤾‍♂️', '🏌️‍♀️', '🏌️‍♂️', '🏇',
+      '🧘‍♀️', '🧘‍♂️', '🏄‍♀️', '🏄‍♂️', '🏊‍♀️', '🏊‍♂️', '🤽‍♀️', '🤽‍♂️', '🚣‍♀️', '🚣‍♂️', '🧗‍♀️', '🧗‍♂️', '🚵‍♀️', '🚵‍♂️', '🚴‍♀️', '🚴‍♂️'
+    ],
+    travel: [
+      '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '🚜', '🦯', '🦽', '🦼',
+      '🛴', '🚲', '🛵', '🏍️', '🛺', '🚨', '🚔', '🚍', '🚘', '🚖', '🚡', '🚠', '🚟', '🚃', '🚋', '🚞',
+      '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚀',
+      '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '⛽', '🚧', '🚦', '🚥', '🗺️', '🗿'
+    ],
+    objects: [
+      '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼',
+      '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭',
+      '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸',
+      '💵', '💴', '💶', '💷', '💰', '💳', '💎', '⚖️', '🧰', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🔩', '⚙️'
+    ],
+    symbols: [
+      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+      '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
+      '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳',
+      '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️',
+      '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯'
+    ]
+  };
+
+function initializeEmojiPicker() {
+  if (!emojiBtn || !emojiPicker || !emojiGrid) {
+    console.log('⚠️ Elementos do seletor de emoji não encontrados');
+    return;
+  }
+
+    // Toggle emoji picker
+    emojiBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleEmojiPicker();
+    });
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!emojiPicker.contains(e.target) && !emojiBtn.contains(e.target)) {
+        hideEmojiPicker();
+      }
+    });
+
+    // Category buttons
+    const categoryButtons = document.querySelectorAll('.emoji-category');
+    categoryButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const category = btn.dataset.category;
+        selectEmojiCategory(category, btn);
+      });
+    });
+
+    // Load default category
+    selectEmojiCategory('people', document.querySelector('.emoji-category[data-category="people"]'));
+    
+    console.log('✅ Seletor de emoji inicializado');
+  }
+
+  function toggleEmojiPicker() {
+    emojiPicker.classList.toggle('hidden');
+    
+    if (!emojiPicker.classList.contains('hidden')) {
+      console.log('😊 Seletor de emoji aberto');
+    } else {
+      console.log('😊 Seletor de emoji fechado');
+    }
+  }
+
+  function hideEmojiPicker() {
+    emojiPicker.classList.add('hidden');
+  }
+
+  function selectEmojiCategory(category, button) {
+    // Update active category button
+    document.querySelectorAll('.emoji-category').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+
+    // Load emojis for category
+    const emojis = emojiCategories[category] || [];
+    
+    emojiGrid.innerHTML = emojis.map(emoji => 
+      `<button class="emoji-item" data-emoji="${emoji}">${emoji}</button>`
+    ).join('');
+
+    // Add click handlers to emoji buttons
+    emojiGrid.querySelectorAll('.emoji-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        insertEmoji(btn.dataset.emoji);
+      });
+    });
+
+    console.log(`😊 Carregados ${emojis.length} emojis da categoria ${category}`);
+  }
+
+  function insertEmoji(emoji) {
+    if (!messageInput) return;
+
+    const cursorPosition = messageInput.selectionStart;
+    const textBefore = messageInput.value.substring(0, cursorPosition);
+    const textAfter = messageInput.value.substring(messageInput.selectionEnd);
+    
+    messageInput.value = textBefore + emoji + textAfter;
+    messageInput.focus();
+    
+    // Set cursor position after the emoji
+    const newPosition = cursorPosition + emoji.length;
+    messageInput.setSelectionRange(newPosition, newPosition);
+    
+    // Hide emoji picker after selection
+    hideEmojiPicker();
+    
+    console.log(`😊 Emoji inserido: ${emoji}`);
+  }
+
+  // === FILE ATTACHMENT SYSTEM ===
+
+  function initializeFileAttachment() {
+    if (!attachBtn || !fileInput) {
+      console.log('⚠️ Elementos de anexo não encontrados');
+      return;
+    }
+
+    // Click attach button to open file dialog
+    attachBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      fileInput.click();
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        handleFileAttachment(files);
+      }
+    });
+
+    console.log('✅ Sistema de anexos inicializado');
+  }
+
+  async function handleFileAttachment(files) {
+    if (!currentChat || !currentToken) {
+      alert('Selecione uma conversa primeiro');
+      return;
+    }
+
+    console.log(`📎 Processando ${files.length} arquivo(s) para anexo`);
+
+    for (const file of files) {
+      if (file.size > 16 * 1024 * 1024) { // 16MB limit
+        alert(`Arquivo muito grande: ${file.name}. Limite: 16MB`);
+        continue;
+      }
+
+      try {
+        await sendFileMessage(file);
+      } catch (error) {
+        console.error('❌ Erro ao enviar arquivo:', error);
+        alert(`Erro ao enviar ${file.name}: ${error.message}`);
+      }
+    }
+
+    // Clear file input
+    fileInput.value = '';
+  }
+
+  async function sendFileMessage(file) {
+    console.log(`📎 Enviando arquivo: ${file.name} (${file.type}, ${file.size} bytes)`);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('to', currentChat.id);
+
+    try {
+      setLoading(true, sendBtn);
+      
+      const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/send-media`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        console.log(`✅ Arquivo enviado com sucesso: ${file.name}`);
+        
+        // Add local message for immediate feedback
+        const localMessage = {
+          id: 'temp_' + Date.now(),
+          body: file.name,
+          fromMe: true,
+          timestamp: Math.floor(Date.now() / 1000),
+          type: getFileType(file.type),
+          hasMedia: true,
+          media: {
+            mimetype: file.type,
+            filename: file.name,
+            filesize: file.size
+          }
+        };
+        
+        handleNewMessage({ ...localMessage, chatId: currentChat.id });
+      } else {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'Erro desconhecido');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao enviar arquivo:', error);
+      throw error;
+    } finally {
+      setLoading(false, sendBtn);
+    }
+  }
+
+  function getFileType(mimeType) {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'document';
+  }
+
+  // === TYPING INDICATOR SYSTEM ===
+
+  let typingTimer = null;
+  let isTyping = false;
+
+  function initializeTypingIndicator() {
+    if (!messageInput) {
+      console.log('⚠️ Input de mensagem não encontrado para indicador de digitação');
+      return;
+    }
+
+    // Detectar quando o usuário está digitando
+    messageInput.addEventListener('input', () => {
+      handleUserTyping();
+    });
+
+    messageInput.addEventListener('keydown', () => {
+      handleUserTyping();
+    });
+
+    console.log('✅ Sistema de indicador de digitação inicializado');
+  }
+
+  function handleUserTyping() {
+    if (!currentChat || !socket) return;
+
+    // Se não está digitando, começar a digitar
+    if (!isTyping) {
+      isTyping = true;
+      socket.emit('typing:start', { chatId: currentChat.id });
+      console.log('⌨️ Começou a digitar');
+    }
+
+    // Limpar timer anterior
+    if (typingTimer) {
+      clearTimeout(typingTimer);
+    }
+
+    // Definir novo timer para parar de digitar (2 segundos de inatividade)
+    typingTimer = setTimeout(() => {
+      if (isTyping) {
+        isTyping = false;
+        socket.emit('typing:stop', { chatId: currentChat.id });
+        console.log('⌨️ Parou de digitar');
+      }
+    }, 2000);
+  }
+
+  function showTypingIndicator(chatId, userName) {
+    if (!typingIndicator || !typingText) return;
+    
+    // Só mostrar se for o chat atual
+    if (!currentChat || currentChat.id !== chatId) return;
+
+    const name = userName || getContactName(chatId);
+    typingText.textContent = `${name} está digitando...`;
+    typingIndicator.classList.remove('hidden');
+
+    console.log(`⌨️ Mostrando indicador de digitação para ${name}`);
+  }
+
+  function hideTypingIndicator(chatId) {
+    if (!typingIndicator) return;
+    
+    // Só esconder se for o chat atual
+    if (!currentChat || currentChat.id !== chatId) return;
+
+    typingIndicator.classList.add('hidden');
+    console.log('⌨️ Ocultando indicador de digitação');
+  }
+
+  function hideAllTypingIndicators() {
+    if (!typingIndicator) return;
+    typingIndicator.classList.add('hidden');
+  }
+
+  // === LINK PREVIEW SYSTEM ===
+
+  function detectLinksInMessage(text) {
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const matches = text.match(urlRegex);
+    return matches || [];
+  }
+
+  function renderMessageWithLinkPreviews(msg) {
+    // Verificar se a mensagem tem links
+    const links = detectLinksInMessage(msg.body || '');
+    
+    if (links.length === 0) {
+      return `<div class="message-body">${msg.body || ''}</div>`;
+    }
+
+    // Renderizar mensagem com links clicáveis
+    let messageText = msg.body || '';
+    links.forEach(link => {
+      const linkHtml = `<a href="${link}" target="_blank" rel="noopener noreferrer" class="message-link">${link}</a>`;
+      messageText = messageText.replace(link, linkHtml);
+    });
+
+    let linkPreviewHtml = '';
+    
+    // Se temos informações de preview do servidor
+    if (msg.linkPreviews && msg.linkPreviews.length > 0) {
+      linkPreviewHtml = msg.linkPreviews.map(preview => `
+        <div class="link-preview">
+          ${preview.image ? `<div class="link-preview-image">
+            <img src="${preview.image}" alt="Preview" loading="lazy">
+          </div>` : ''}
+          <div class="link-preview-content">
+            ${preview.title ? `<div class="link-preview-title">${preview.title}</div>` : ''}
+            ${preview.description ? `<div class="link-preview-description">${preview.description}</div>` : ''}
+            <div class="link-preview-url">${preview.url}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    return `
+      <div class="message-body">${messageText}</div>
+      ${linkPreviewHtml}
+    `;
+  }
+
+  async function fetchLinkPreview(url) {
+    try {
+      // Usar um serviço de preview ou API própria
+      const response = await fetch(`${WHATSAPP_URL}/api/link-preview?url=${encodeURIComponent(url)}`);
+      
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao buscar preview do link:', error);
+    }
+    
+  // === PROFILE PICTURE OPTIMIZATION ===
+
+  function preloadProfilePictures(chatIds) {
+    // Pré-carregar fotos de perfil para melhorar performance
+    chatIds.forEach(chatId => {
+      const img = new Image();
+      img.src = `${WHATSAPP_URL}/api/cached-profile-picture/${chatId}`;
+      // Não precisamos fazer nada com a imagem, apenas carregar o cache
+    });
+  }
+
+  function updateProfilePictureInRealTime(chatId, newProfilePicture) {
+    // Atualizar foto de perfil em tempo real quando há mudanças
+    const chatElements = document.querySelectorAll(`[data-chat-id="${chatId}"] .profile-picture`);
+    
+    chatElements.forEach(imgElement => {
+      if (newProfilePicture) {
+        imgElement.src = `${WHATSAPP_URL}/api/cached-profile-picture/${chatId}?t=${Date.now()}`;
+        imgElement.style.display = 'block';
+        const emojiAvatar = imgElement.parentNode.querySelector('.avatar-emoji');
+        if (emojiAvatar) {
+          emojiAvatar.style.display = 'none';
+        }
+      } else {
+        imgElement.style.display = 'none';
+        const emojiAvatar = imgElement.parentNode.querySelector('.avatar-emoji');
+        if (emojiAvatar) {
+          emojiAvatar.style.display = 'flex';
+        }
+      }
+    });
+  }
+
+  // === VOICE RECORDING SYSTEM ===
+
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recordingStartTime = null;
+  let recordingTimer = null;
+  let recordedBlob = null;
+
+  const voiceBtn = document.getElementById('voiceBtn');
+  const voiceModal = document.getElementById('voiceModal');
+  const recordingTime = document.getElementById('recordingTime');
+  const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
+  const stopRecordingBtn = document.getElementById('stopRecordingBtn');
+  const sendVoiceBtn = document.getElementById('sendVoiceBtn');
+
+  function initializeVoiceRecording() {
+    if (!voiceBtn || !voiceModal) {
+      console.log('⚠️ Elementos de gravação de voz não encontrados');
+      return;
+    }
+
+    voiceBtn.addEventListener('click', startVoiceRecording);
+    cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
+    stopRecordingBtn.addEventListener('click', stopVoiceRecording);
+    sendVoiceBtn.addEventListener('click', sendVoiceMessage);
+
+    // Fechar modal clicando fora
+    voiceModal.addEventListener('click', (e) => {
+      if (e.target === voiceModal) {
+        cancelVoiceRecording();
+      }
+    });
+
+    console.log('✅ Sistema de gravação de voz inicializado');
+  }
+
+  async function startVoiceRecording() {
+    try {
+      console.log('🎤 Iniciando gravação de voz...');
+
+      // Solicitar permissão para o microfone
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Configurar o MediaRecorder
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      recordedBlob = null;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        showVoicePreview();
+      };
+
+      // Iniciar gravação
+      mediaRecorder.start();
+      recordingStartTime = Date.now();
+
+      // Mostrar modal e iniciar timer
+      voiceModal.classList.remove('hidden');
+      voiceBtn.classList.add('recording');
+      sendVoiceBtn.classList.add('hidden');
+      
+      startRecordingTimer();
+
+      console.log('✅ Gravação iniciada');
+
+    } catch (error) {
+      console.error('❌ Erro ao iniciar gravação:', error);
+      alert('Erro ao acessar o microfone. Verifique as permissões do navegador.');
+    }
+  }
+
+  function startRecordingTimer() {
+    recordingTimer = setInterval(() => {
+      if (recordingStartTime) {
+        const elapsed = Date.now() - recordingStartTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        recordingTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        // Limitar gravação a 5 minutos
+        if (elapsed > 300000) {
+          stopVoiceRecording();
+        }
+      }
+    }, 100);
+  }
+
+  function stopRecordingTimer() {
+    if (recordingTimer) {
+      clearInterval(recordingTimer);
+      recordingTimer = null;
+    }
+  }
+
+  function stopVoiceRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      stopRecordingTimer();
+      voiceBtn.classList.remove('recording');
+      console.log('⏹️ Gravação parada');
+    }
+  }
+
+  function showVoicePreview() {
+    // Mostrar botão de envio
+    sendVoiceBtn.classList.remove('hidden');
+    stopRecordingBtn.classList.add('hidden');
+    
+    // Atualizar mensagem
+    const recordingMessage = document.querySelector('.recording-message');
+    if (recordingMessage) {
+      recordingMessage.textContent = 'Gravação finalizada. Enviar?';
+    }
+  }
+
+  function cancelVoiceRecording() {
+    if (mediaRecorder) {
+      if (mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+      mediaRecorder = null;
+    }
+
+    // Limpar dados
+    audioChunks = [];
+    recordedBlob = null;
+    recordingStartTime = null;
+    stopRecordingTimer();
+
+    // Resetar interface
+    voiceModal.classList.add('hidden');
+    voiceBtn.classList.remove('recording');
+    sendVoiceBtn.classList.add('hidden');
+    stopRecordingBtn.classList.remove('hidden');
+    recordingTime.textContent = '00:00';
+
+    const recordingMessage = document.querySelector('.recording-message');
+    if (recordingMessage) {
+      recordingMessage.textContent = 'Gravando mensagem de voz...';
+    }
+
+    console.log('❌ Gravação cancelada');
+  }
+
+  async function sendVoiceMessage() {
+    if (!recordedBlob || !currentChat || !currentToken) {
+      alert('Erro: gravação não disponível ou chat não selecionado');
+      return;
+    }
+
+    try {
+      console.log('📤 Enviando mensagem de voz...');
+
+      const formData = new FormData();
+      formData.append('file', recordedBlob, 'voice-message.webm');
+      formData.append('to', currentChat.id);
+
+      setLoading(true, sendVoiceBtn);
+
+      const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/send-media`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        console.log('✅ Mensagem de voz enviada');
+        
+        // Adicionar mensagem local para feedback imediato
+        const localMessage = {
+          id: 'temp_' + Date.now(),
+          body: 'Mensagem de voz',
+          fromMe: true,
+          timestamp: Math.floor(Date.now() / 1000),
+          type: 'audio',
+          hasMedia: true,
+          media: {
+            mimetype: 'audio/webm',
+            filename: 'voice-message.webm'
+          }
+        };
+        
+        handleNewMessage({ ...localMessage, chatId: currentChat.id });
+        cancelVoiceRecording();
+      } else {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'Erro desconhecido');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao enviar mensagem de voz:', error);
+      alert(`Erro ao enviar mensagem de voz: ${error.message}`);
+    } finally {
+      setLoading(false, sendVoiceBtn);
+    }
+  }
 
   // === UTILITY FUNCTIONS ===
   
@@ -346,6 +982,10 @@
       console.log('💬 Chats atualizados:', newChats.length);
       chats = newChats;
       renderChats();
+      
+      // Pré-carregar fotos de perfil dos chats atualizados
+      const chatIds = newChats.map(chat => chat.id);
+      preloadProfilePictures(chatIds);
     });
     
     // Novos handlers para sincronização aprimorada
@@ -358,6 +998,46 @@
       console.log('📋 Lista de chats sincronizada:', newChats.length);
       chats = newChats;
       renderChats();
+      
+      // Pré-carregar fotos de perfil quando chats são sincronizados
+      const chatIds = newChats.map(chat => chat.id);
+      preloadProfilePictures(chatIds);
+    });
+
+    // Handler para atualizações de status de mensagens
+    socket.on('message:status', (statusUpdate) => {
+      console.log('📊 Status de mensagem atualizado:', statusUpdate);
+      updateMessageStatus(statusUpdate);
+    });
+
+    // Handler para mudanças de foto de perfil
+    socket.on('profile:changed', (profileUpdate) => {
+      console.log('👤 Foto de perfil alterada:', profileUpdate);
+      
+      // Atualizar foto de perfil em tempo real
+      updateProfilePictureInRealTime(profileUpdate.contactId, profileUpdate.hasProfilePicture);
+      
+      // Atualizar cache se o contato está na lista de chats
+      const chatIndex = chats.findIndex(chat => chat.id === profileUpdate.contactId);
+      if (chatIndex !== -1) {
+        chats[chatIndex].profilePicture = profileUpdate.hasProfilePicture 
+          ? `${WHATSAPP_URL}/api/cached-profile-picture/${profileUpdate.contactId}`
+          : null;
+        
+        // Re-renderizar apenas o chat específico para atualizar a foto
+        renderChats();
+      }
+    });
+
+    // Handlers para indicador de digitação
+    socket.on('typing:start', (data) => {
+      console.log('⌨️ Alguém começou a digitar:', data);
+      showTypingIndicator(data.chatId, data.userName);
+    });
+
+    socket.on('typing:stop', (data) => {
+      console.log('⌨️ Alguém parou de digitar:', data);
+      hideTypingIndicator(data.chatId);
     });
   }
 
@@ -528,21 +1208,37 @@
       return timeB - timeA; // Ordem decrescente (mais recente primeiro)
     });
 
-    chatsListEl.innerHTML = sortedChats.map(chat => `
-      <div class="chat-item" data-chat-id="${chat.id}">
-        <div class="chat-avatar">${getAvatarEmoji(chat.name)}</div>
-        <div class="chat-info">
-          <div class="chat-name">${chat.name || getContactName(chat.id)}</div>
-          <div class="chat-last-message">
-            ${chat.lastMessage ? (chat.lastMessage.fromMe ? 'Você: ' : '') + truncateMessage(chat.lastMessage.body) : 'Nenhuma mensagem'}
+    chatsListEl.innerHTML = sortedChats.map(chat => {
+      // Usar sistema de cache otimizado para fotos de perfil
+      const profilePictureUrl = chat.profilePicture 
+        ? `${WHATSAPP_URL}/api/cached-profile-picture/${chat.id}`
+        : null;
+      
+      // Criar elemento de avatar com foto de perfil cacheada ou emoji
+      const avatarContent = profilePictureUrl
+        ? `<img src="${profilePictureUrl}" alt="${chat.name}" class="profile-picture" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+        : '';
+      const emojiAvatar = `<div class="avatar-emoji" style="${profilePictureUrl ? 'display:none' : ''}">${getAvatarEmoji(chat.name)}</div>`;
+      
+      return `
+        <div class="chat-item" data-chat-id="${chat.id}">
+          <div class="chat-avatar">
+            ${avatarContent}
+            ${emojiAvatar}
+          </div>
+          <div class="chat-info">
+            <div class="chat-name">${chat.name || getContactName(chat.id)}</div>
+            <div class="chat-last-message">
+              ${chat.lastMessage ? (chat.lastMessage.fromMe ? 'Você: ' : '') + truncateMessage(chat.lastMessage.body) : 'Nenhuma mensagem'}
+            </div>
+          </div>
+          <div class="chat-meta">
+            ${chat.lastMessage ? `<div class="chat-time">${formatChatTime(chat.lastMessage.timestamp)}</div>` : ''}
+            ${chat.unreadCount ? `<div class="chat-unread">${chat.unreadCount}</div>` : ''}
           </div>
         </div>
-        <div class="chat-meta">
-          ${chat.lastMessage ? `<div class="chat-time">${formatChatTime(chat.lastMessage.timestamp)}</div>` : ''}
-          ${chat.unreadCount ? `<div class="chat-unread">${chat.unreadCount}</div>` : ''}
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     // Add click handlers and mark active chat
     chatsListEl.querySelectorAll('.chat-item').forEach(item => {
@@ -564,6 +1260,9 @@
   async function selectChat(chatId) {
     const chat = chats.find(c => c.id === chatId);
     if (!chat) return;
+
+    // Clear typing indicators when changing chats
+    hideAllTypingIndicators();
 
     // Update UI
     currentChat = chat;
@@ -636,15 +1335,100 @@
       console.log(`📝 Mensagem ${index + 1}: ${msg.fromMe ? 'ENVIADA' : 'RECEBIDA'} - "${msg.body}" - ${new Date(msg.timestamp).toLocaleTimeString()}`);
     });
 
-    messagesArea.innerHTML = chatMessages.map(msg => `
-      <div class="message ${msg.fromMe ? 'from-me' : 'from-other'}">
-        <div class="message-body">${msg.body}</div>
-        <div class="message-meta">
-          <span class="message-time">${formatTime(msg.timestamp)}</span>
-          ${msg.fromMe ? '<span class="message-status">✓✓</span>' : ''}
+    messagesArea.innerHTML = chatMessages.map(msg => {
+      // Determinar o conteúdo da mensagem baseado no tipo
+      let messageContent = '';
+      
+      if (msg.hasMedia && msg.media) {
+        // Mensagem com mídia
+        const mediaType = msg.type;
+        const mimetype = msg.media.mimetype || '';
+        
+        if (mediaType === 'image' || mimetype.startsWith('image/')) {
+          // Imagem
+          messageContent = `
+            <div class="message-media">
+              <img src="data:${mimetype};base64,${msg.media.data}" 
+                   alt="Imagem" 
+                   class="message-image" 
+                   onclick="openMediaViewer(this.src)"
+                   loading="lazy">
+              ${msg.body ? `<div class="media-caption">${msg.body}</div>` : ''}
+            </div>
+          `;
+        } else if (mediaType === 'video' || mimetype.startsWith('video/')) {
+          // Vídeo
+          messageContent = `
+            <div class="message-media">
+              <video controls class="message-video" preload="metadata">
+                <source src="data:${mimetype};base64,${msg.media.data}" type="${mimetype}">
+                Seu navegador não suporta a reprodução de vídeo.
+              </video>
+              ${msg.body ? `<div class="media-caption">${msg.body}</div>` : ''}
+            </div>
+          `;
+        } else if (mediaType === 'audio' || mimetype.startsWith('audio/')) {
+          // Áudio
+          messageContent = `
+            <div class="message-media">
+              <div class="voice-message">
+                <div class="voice-message-icon">🎤</div>
+                <div class="voice-message-info">
+                  <audio controls class="message-audio">
+                    <source src="data:${mimetype};base64,${msg.media.data}" type="${mimetype}">
+                    Seu navegador não suporta a reprodução de áudio.
+                  </audio>
+                  <div class="voice-message-duration">Mensagem de voz</div>
+                </div>
+              </div>
+              ${msg.body ? `<div class="media-caption">${msg.body}</div>` : ''}
+            </div>
+          `;
+        } else if (mediaType === 'document') {
+          // Documento
+          const filename = msg.media.filename || 'Documento';
+          messageContent = `
+            <div class="message-media">
+              <div class="document-message">
+                <div class="document-icon">📄</div>
+                <div class="document-info">
+                  <div class="document-name">${filename}</div>
+                  <div class="document-size">${formatFileSize(msg.media.filesize)}</div>
+                </div>
+                <button onclick="downloadMedia('${msg.id}')" class="download-btn">⬇️</button>
+              </div>
+              ${msg.body ? `<div class="media-caption">${msg.body}</div>` : ''}
+            </div>
+          `;
+        } else {
+          // Mídia não suportada
+          messageContent = `
+            <div class="message-media">
+              <div class="unsupported-media">
+                <span>📎 Mídia não suportada (${mediaType})</span>
+                <button onclick="downloadMedia('${msg.id}')" class="download-btn">⬇️ Baixar</button>
+              </div>
+              ${msg.body ? `<div class="media-caption">${msg.body}</div>` : ''}
+            </div>
+          `;
+        }
+      } else {
+        // Mensagem de texto normal com possível preview de links
+        messageContent = renderMessageWithLinkPreviews(msg);
+      }
+      
+      return `
+        <div class="message ${msg.fromMe ? 'from-me' : 'from-other'}" data-message-id="${msg.id}">
+          ${messageContent}
+          <div class="message-meta">
+            <span class="message-time">${formatTime(msg.timestamp)}</span>
+            ${msg.fromMe ? `<span class="message-status ${msg.isRead ? 'message-read' : ''}">
+              <span class="status-icon ${msg.isRead ? 'read' : ''}">${msg.statusIcon || '✓'}</span>
+            </span>` : ''}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     // Scroll to bottom with smooth behavior
     setTimeout(() => {
@@ -790,6 +1574,69 @@
     }
   }
 
+  // === MESSAGE STATUS MANAGEMENT ===
+
+  function updateMessageStatus(statusUpdate) {
+    const { messageId, status, statusIcon, isRead } = statusUpdate;
+    
+    console.log(`📊 Atualizando status da mensagem ${messageId} para ${status} (${statusIcon})`);
+    
+    // Encontrar a mensagem em todas as conversas
+    let messageFound = false;
+    for (const chatId in messages) {
+      const chatMessages = messages[chatId];
+      const messageIndex = chatMessages.findIndex(msg => msg.id === messageId);
+      
+      if (messageIndex !== -1) {
+        // Atualizar status da mensagem
+        chatMessages[messageIndex].status = status;
+        chatMessages[messageIndex].statusIcon = statusIcon;
+        chatMessages[messageIndex].isRead = isRead;
+        
+        console.log(`✅ Status atualizado para mensagem no chat ${chatId}`);
+        messageFound = true;
+        
+        // Se é o chat atual, re-renderizar as mensagens
+        if (currentChat && currentChat.id === chatId) {
+          updateMessageStatusInDOM(messageId, statusIcon, isRead);
+        }
+        break;
+      }
+    }
+    
+    if (!messageFound) {
+      console.log(`⚠️ Mensagem ${messageId} não encontrada para atualizar status`);
+    }
+  }
+
+  function updateMessageStatusInDOM(messageId, statusIcon, isRead) {
+    // Encontrar o elemento da mensagem no DOM usando o data-message-id
+    const messageElement = messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+    
+    if (messageElement) {
+      const messageStatusEl = messageElement.querySelector('.message-status');
+      
+      if (messageStatusEl) {
+        const statusIconEl = messageStatusEl.querySelector('.status-icon');
+        
+        if (statusIconEl) {
+          // Atualizar o ícone de status
+          statusIconEl.textContent = statusIcon;
+          statusIconEl.className = `status-icon ${isRead ? 'read' : ''}`;
+          
+          // Adicionar classe de lido ao status
+          if (isRead) {
+            messageStatusEl.classList.add('message-read');
+          }
+          
+          console.log(`✅ Status atualizado no DOM para mensagem ${messageId}`);
+        }
+      }
+    } else {
+      console.log(`⚠️ Elemento DOM não encontrado para mensagem ${messageId}`);
+    }
+  }
+
   // === SCREEN MANAGEMENT ===
 
   function showLoginScreen() {
@@ -910,73 +1757,181 @@
     });
   });
 
+  // Initialize emoji picker
+  initializeEmojiPicker();
+
+  // Initialize file attachment system
+  initializeFileAttachment();
+
+  // Initialize typing indicator
+  initializeTypingIndicator();
+
+  // Initialize voice recording system
+  initializeVoiceRecording();
+
+  // === MEDIA UTILITY FUNCTIONS ===
+
+  // Função para formatar tamanho de arquivo
+  function formatFileSize(bytes) {
+    if (!bytes) return 'Tamanho desconhecido';
+    
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
+  }
+
+  // Função para baixar mídia
+  async function downloadMedia(messageId) {
+    try {
+      const response = await fetch(`${WHATSAPP_URL}/api/download-media/${messageId}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        
+        // Criar link temporário para download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `media_${messageId}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+      } else {
+        console.error('❌ Erro ao baixar mídia:', response.statusText);
+        alert('Erro ao baixar mídia');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao baixar mídia:', error);
+      alert('Erro ao baixar mídia');
+    }
+  }
+
+  // Função para abrir visualizador de mídia
+  function openMediaViewer(src) {
+    // Criar modal para visualização de imagem
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      cursor: pointer;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = `
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+    `;
+    
+    modal.appendChild(img);
+    document.body.appendChild(modal);
+    
+    // Fechar modal ao clicar
+    modal.addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+    
+    // Fechar modal com ESC
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        document.body.removeChild(modal);
+        document.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+  }
+
+  // Disponibilizar funções globalmente para uso nos templates
+  window.downloadMedia = downloadMedia;
+  window.openMediaViewer = openMediaViewer;
+
   // === INITIALIZATION ===
 
   // === URL PARAMETERS HANDLING ===
   
-  function checkUrlParams() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('username');
-    const password = urlParams.get('password');
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const username = urlParams.get('username');
+  const password = urlParams.get('password');
+  
+  if (username && password) {
+    console.log('🔗 Credenciais encontradas na URL, tentando login automático...');
     
-    if (username && password) {
-      console.log('🔗 Credenciais encontradas na URL, tentando login automático...');
-      
-      // Limpar parâmetros da URL para segurança
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-      
-      // Preencher campos do formulário
-      if (document.getElementById('username')) {
-        document.getElementById('username').value = decodeURIComponent(username);
-      }
-      if (document.getElementById('password')) {
-        document.getElementById('password').value = decodeURIComponent(password);
-      }
-      
-      // Tentar login automático
-      setTimeout(async () => {
-        try {
-          setStatus('Fazendo login automático...', 'info');
-          await login(decodeURIComponent(username), decodeURIComponent(password));
-        } catch (error) {
-          console.error('❌ Falha no login automático:', error);
-          setStatus('Falha no login: ' + error.message, 'error');
-          showMixedContentWarning();
-        }
-      }, 1000);
-      
-      return true;
+    // Limpar parâmetros da URL para segurança
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+    
+    // Preencher campos do formulário
+    if (document.getElementById('username')) {
+      document.getElementById('username').value = decodeURIComponent(username);
+    }
+    if (document.getElementById('password')) {
+      document.getElementById('password').value = decodeURIComponent(password);
     }
     
-    return false;
-  }
-
-  document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 WhatIntegra carregado');
-    
-    // Check URL parameters first
-    const hasUrlParams = checkUrlParams();
-    
-    if (!hasUrlParams) {
-      // Try to restore session
-      const hasSession = await trySession();
-      
-      if (!hasSession) {
-        showLoginScreen();
+    // Tentar login automático
+    setTimeout(async () => {
+      try {
+        setStatus('Fazendo login automático...', 'info');
+        await login(decodeURIComponent(username), decodeURIComponent(password));
+      } catch (error) {
+        console.error('❌ Falha no login automático:', error);
+        setStatus('Falha no login: ' + error.message, 'error');
+        showMixedContentWarning();
       }
-    } else {
-      // Show login screen but don't try session restoration
+    }, 1000);
+    
+    return true;
+  }
+  
+  return false;
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 WhatIntegra carregado');
+  
+  // Check URL parameters first
+  const hasUrlParams = checkUrlParams();
+  
+  if (!hasUrlParams) {
+    // Try to restore session
+    const hasSession = await trySession();
+    
+    if (!hasSession) {
       showLoginScreen();
     }
-  });
+  } else {
+    // Show login screen but don't try session restoration
+    showLoginScreen();
+  }
+});
 
-  // Handle page visibility for reconnection
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && currentUser && socket && !socket.connected) {
-      console.log('🔄 Página voltou ao foco, tentando reconectar...');
-      connectWebSocket();
-    }
-  });
+// Handle page visibility for reconnection
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && currentUser && socket && !socket.connected) {
+    console.log('🔄 Página voltou ao foco, tentando reconectar...');
+    connectWebSocket();
+  }
+});
 
-})();
+console.log('✅ Script WhatIntegra carregado com sucesso');
+}
