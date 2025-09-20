@@ -3,9 +3,11 @@
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-// URLs baseadas no ambiente - SEMPRE HTTP para servidores locais
-const API_URL = 'http://127.0.0.1:8765/api';
-const WHATSAPP_URL = 'http://127.0.0.1:3001';
+// URLs baseadas no ambiente
+// Para GitHub Pages: usar HTTPS na porta 8766 (servidor HTTPS)
+// Para localhost: usar HTTP na porta 8765 (servidor HTTP)
+const API_URL = isGitHub ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
+const WHATSAPP_URL = isGitHub ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
 
 // Debug da configuração
 console.log('🔧 WhatIntegra - Configuração:', {

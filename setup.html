@@ -151,8 +151,8 @@
             Clique no botão abaixo e aceite o aviso de segurança.
         </div>
         
-        <a href="http://127.0.0.1:8765" target="_blank" class="btn" onclick="checkAuth()" rel="noopener">
-            🔐 Autorizar Servidor de Auth
+        <a href="https://127.0.0.1:8766" target="_blank" class="btn" onclick="checkAuth()" rel="noopener">
+            🔐 Autorizar Servidor de Auth (HTTPS)
         </a>
         
         <div class="step">
@@ -161,8 +161,8 @@
             Clique no botão abaixo e aceite o aviso de segurança.
         </div>
         
-        <a href="http://127.0.0.1:3001" target="_blank" class="btn btn-secondary" onclick="checkWhatsApp()" rel="noopener">
-            💬 Autorizar Servidor WhatsApp
+        <a href="https://127.0.0.1:3002" target="_blank" class="btn btn-secondary" onclick="checkWhatsApp()" rel="noopener">
+            💬 Autorizar Servidor WhatsApp (HTTPS)
         </a>
         
         <div id="status" class="status"></div>
@@ -213,8 +213,8 @@
         
         // Atualizar links com URLs corretas
         window.onload = () => {
-            document.querySelector('a[href*="8765"]').href = AUTH_URL;
-            document.querySelector('a[href*="3001"]').href = WHATSAPP_URL;
+            document.querySelector('a[href*="8766"]').href = AUTH_URL;
+            document.querySelector('a[href*="3002"]').href = WHATSAPP_URL;
             
             if (isGitHubPages) {
                 document.querySelector('.warning').innerHTML = `
