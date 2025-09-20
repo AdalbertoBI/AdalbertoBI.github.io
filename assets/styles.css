@@ -264,11 +264,17 @@ code{
   border-radius:50%;
   cursor:pointer;
   color:var(--muted);
-  transition:background 0.2s ease;
+  transition:all 0.2s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
 }
 
 .btn-icon:hover{
   background:rgba(255,255,255,0.1);
+  color:var(--fg);
 }
 
 /* === QR CODE SCREEN === */
@@ -714,27 +720,6 @@ code{
 
 .btn-send:hover{
   background:#00916a;
-}
-
-.btn-icon{
-  background:none;
-  border:none;
-  padding:6px;
-  border-radius:50%;
-  cursor:pointer;
-  font-size:1.2rem;
-  color:var(--muted);
-  transition:all 0.2s ease;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:32px;
-  height:32px;
-}
-
-.btn-icon:hover{
-  background:rgba(255, 255, 255, 0.1);
-  color:var(--fg);
 }
 
 /* Emoji Picker */
