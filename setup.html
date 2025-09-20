@@ -184,8 +184,30 @@
     </div>
 
     <script>
+        // Detectar se está rodando no GitHub Pages
+        const isGitHubPages = location.hostname.includes('github.io');
+        
+        // URLs baseadas no ambiente
+        const AUTH_URL = isGitHubPages ? 'https://127.0.0.1:8766' : 'http://127.0.0.1:8765';
+        const WHATSAPP_URL = isGitHubPages ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
+        
         let authOk = false;
         let whatsappOk = false;
+        
+        // Atualizar links com URLs corretas
+        window.onload = () => {
+            document.querySelector('a[href*="8765"]').href = AUTH_URL;
+            document.querySelector('a[href*="3001"]').href = WHATSAPP_URL;
+            
+            if (isGitHubPages) {
+                document.querySelector('.warning').innerHTML = `
+                    <strong>⚠️ Configuração Necessária</strong><br>
+                    Para usar o WhatsApp Web no GitHub Pages, você precisa autorizar os servidores HTTPS locais.
+                `;
+            }
+            
+            setTimeout(testConnection, 1000);
+        };
         
         function showStatus(message, isSuccess) {
             const status = document.getElementById('status');
@@ -200,7 +222,7 @@
         
         function checkAuth() {
             setTimeout(() => {
-                fetch('http://127.0.0.1:8765')
+                fetch(AUTH_URL)
                     .then(() => {
                         authOk = true;
                         checkBoth();
@@ -213,7 +235,7 @@
         
         function checkWhatsApp() {
             setTimeout(() => {
-                fetch('http://127.0.0.1:3001')
+                fetch(WHATSAPP_URL)
                     .then(() => {
                         whatsappOk = true;
                         checkBoth();
@@ -238,8 +260,8 @@
             loading.style.display = 'inline-block';
             
             Promise.all([
-                fetch('http://127.0.0.1:8765').then(() => { authOk = true; }),
-                fetch('http://127.0.0.1:3001').then(() => { whatsappOk = true; })
+                fetch(AUTH_URL).then(() => { authOk = true; }),
+                fetch(WHATSAPP_URL).then(() => { whatsappOk = true; })
             ]).then(() => {
                 showStatus('✅ Conexão estabelecida com sucesso!', true);
             }).catch(() => {
@@ -249,11 +271,6 @@
                 loading.style.display = 'none';
             });
         }
-        
-        // Teste automático ao carregar a página
-        window.onload = () => {
-            setTimeout(testConnection, 1000);
-        };
     </script>
 </body>
 </html>

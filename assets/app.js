@@ -1,8 +1,10 @@
 (() => {
   // Configurações
-  const API_URL = 'http://127.0.0.1:8765/api';
-  const WHATSAPP_URL = 'http://127.0.0.1:3001';
   const isGitHubPages = location.hostname.includes('github.io');
+  
+  // URLs baseadas no ambiente
+  const API_URL = isGitHubPages ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
+  const WHATSAPP_URL = isGitHubPages ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
 
   // Estado da aplicação
   let socket = null;
@@ -62,11 +64,12 @@
       const warningMsg = document.createElement('div');
       warningMsg.innerHTML = `
         <strong>⚠️ Configuração Necessária</strong><br>
-        Para usar o WhatsApp Web, você precisa primeiro autorizar o servidor local:<br><br>
-        1. <a href="http://127.0.0.1:8765/api/health" target="_blank" style="color: #f59e0b;">Clique aqui para abrir o servidor local</a><br>
-        2. Se aparecer um aviso de segurança, clique em "Avançado" → "Continuar"<br>
-        3. Volte aqui e tente fazer login novamente<br><br>
-        <small>Isso é necessário porque o GitHub Pages usa HTTPS e o servidor local usa HTTP.</small>
+        Para usar o WhatsApp Web, você precisa primeiro autorizar os servidores locais HTTPS:<br><br>
+        1. <a href="https://127.0.0.1:8766/api/health" target="_blank" style="color: #f59e0b;">Clique aqui para abrir o servidor de autenticação HTTPS</a><br>
+        2. <a href="https://127.0.0.1:3002/api/health" target="_blank" style="color: #f59e0b;">Clique aqui para abrir o servidor WhatsApp HTTPS</a><br>
+        3. Aceite os avisos de segurança (clique em "Avançado" → "Continuar")<br>
+        4. Volte aqui e tente fazer login novamente<br><br>
+        <small>Isso é necessário porque o GitHub Pages usa HTTPS e precisa se comunicar com servidores HTTPS locais.</small>
       `;
       statusEl.innerHTML = '';
       statusEl.appendChild(warningMsg);
