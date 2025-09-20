@@ -9,14 +9,37 @@ const isLocalhost = location.hostname === 'localhost' || location.hostname === '
 const API_URL = isGitHub ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
 const WHATSAPP_URL = isGitHub ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
 
-// Debug da configuração
-console.log('🔧 WhatIntegra - Configuração:', {
+// Debug da configuração com informações detalhadas
+console.log('🔧 === WHATINTEGRA - CONFIGURAÇÃO INICIAL ===');
+console.log('🌍 Informações do ambiente:', {
   hostname: location.hostname,
-  isGitHub,
-  isLocalhost,
-  API_URL,
-  WHATSAPP_URL
+  protocol: location.protocol,
+  port: location.port,
+  pathname: location.pathname,
+  origin: location.origin,
+  userAgent: navigator.userAgent.substring(0, 100) + '...'
 });
+console.log('🎯 Detecção de ambiente:', {
+  isGitHub: isGitHub,
+  isLocalhost: isLocalhost,
+  'GitHub detectado por': isGitHub ? 'hostname contém github.io ou github.com' : 'hostname não é GitHub',
+  'Localhost detectado por': isLocalhost ? 'hostname é localhost ou 127.0.0.1' : 'hostname não é localhost'
+});
+console.log('🔗 URLs configuradas:', {
+  API_URL: API_URL,
+  WHATSAPP_URL: WHATSAPP_URL,
+  'Protocolo da API': API_URL.split(':')[0],
+  'Protocolo do WhatsApp': WHATSAPP_URL.split(':')[0]
+});
+console.log('💾 Estado do localStorage:', {
+  hasStoredUser: !!localStorage.getItem('wi_user'),
+  hasStoredToken: !!localStorage.getItem('wi_token'),
+  hasServersAuthorized: !!localStorage.getItem('servers_authorized'),
+  storedUser: localStorage.getItem('wi_user') || 'nenhum',
+  tokenPreview: localStorage.getItem('wi_token') ? localStorage.getItem('wi_token').substring(0, 20) + '...' : 'nenhum'
+});
+console.log('🕐 Timestamp de inicialização:', new Date().toLocaleString('pt-BR'));
+console.log('================================================');
 
 // Estado da aplicação
 let socket = null;
@@ -808,35 +831,90 @@ function initializeEmojiPicker() {
     
     if (!user || !token) {
       console.log('🔍 Nenhuma sessão armazenada encontrada');
+      console.log('📊 Estado do localStorage:', {
+        hasUser: !!user,
+        hasToken: !!token,
+        userValue: user ? `${user.substring(0, 5)}***` : 'null',
+        tokenValue: token ? `${token.substring(0, 10)}***` : 'null'
+      });
       return false;
     }
     
     try {
       console.log('🔄 Verificando sessão armazenada para:', user);
       console.log('🔗 Testando conexão com:', API_URL);
+      console.log('🎫 Token para verificação:', token.substring(0, 20) + '...');
       
+      const requestStart = performance.now();
       const res = await fetch(`${API_URL}/session`, {
         headers: { 'Authorization': `Bearer ${token}` },
         mode: 'cors'
       });
+      const requestTime = performance.now() - requestStart;
       
-      console.log('📡 Resposta da verificação de sessão:', res.status);
+      console.log('📡 Resposta da verificação de sessão:', {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+        headers: [...res.headers.entries()],
+        responseTime: `${requestTime.toFixed(2)}ms`
+      });
       
       if (res.ok) {
+        let sessionData = {};
+        try {
+          const responseText = await res.text();
+          console.log('📄 Resposta da sessão (texto):', responseText);
+          sessionData = responseText ? JSON.parse(responseText) : {};
+          console.log('📊 Dados da sessão parseados:', sessionData);
+        } catch (parseError) {
+          console.error('❌ Erro ao parsear resposta da sessão:', parseError);
+        }
+        
         currentUser = user;
         currentToken = token;
         console.log('✅ Sessão válida restaurada para:', user);
+        console.log('✅ Estado atual:', { currentUser, hasCurrentToken: !!currentToken });
         showWhatsAppInterface();
         return true;
       } else {
-        console.log('❌ Sessão inválida, removendo dados armazenados');
+        console.log('❌ Sessão inválida - Status:', res.status);
+        console.log('❌ Motivo da invalidação:', res.statusText);
+        
+        let errorData = {};
+        try {
+          const errorText = await res.text();
+          console.log('📄 Resposta de erro (texto):', errorText);
+          errorData = errorText ? JSON.parse(errorText) : {};
+          console.log('📊 Dados do erro parseados:', errorData);
+        } catch (parseError) {
+          console.error('❌ Erro ao parsear resposta de erro:', parseError);
+        }
+        
+        console.log('🧹 Removendo dados de sessão inválida do localStorage');
         localStorage.removeItem('wi_user');
         localStorage.removeItem('wi_token');
         return false;
       }
     } catch (error) {
-      console.error('❌ Erro ao verificar sessão:', error);
-      console.log('⚠️ Servidor não acessível, exibindo alerta de configuração');
+      console.error('❌ Erro detalhado ao verificar sessão:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
+      
+      // Logs específicos por tipo de erro
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        console.error('🌐 Falha de rede ao verificar sessão - possíveis causas:');
+        console.error('   1. Servidor de autenticação não está rodando');
+        console.error('   2. Problema de conectividade');
+        console.error('   3. CORS bloqueado');
+        console.error('   4. Certificado SSL rejeitado');
+      }
+      
+      console.log('⚠️ Servidor não acessível durante verificação de sessão');
+      console.log('🔧 Exibindo alerta de configuração para o usuário');
       showConfigAlert();
       return false;
     }
@@ -872,8 +950,14 @@ function initializeEmojiPicker() {
               mode: 'cors'
             });
             console.log('✅ Teste de conectividade OK:', testResponse.status);
+            console.log('📊 Headers da resposta de conectividade:', [...testResponse.headers.entries()]);
           } catch (testError) {
             console.error('❌ Teste de conectividade falhou:', testError);
+            console.error('🔍 Detalhes do erro de conectividade:', {
+              name: testError.name,
+              message: testError.message,
+              stack: testError.stack
+            });
             setStatus('❌ Não foi possível conectar ao servidor HTTPS. Verifique se os servidores estão rodando e foram autorizados no setup.html', 'error');
             
             // Remover autorização e redirecionar para setup
@@ -888,28 +972,53 @@ function initializeEmojiPicker() {
       
       setStatus('Conectando ao servidor...', 'info');
       console.log('📡 Enviando requisição POST para:', `${API_URL}/login`);
+      console.log('📋 Dados da requisição:', { username, bodyLength: JSON.stringify({ username, password }).length });
       
+      const requestStart = performance.now();
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
         mode: 'cors'
       });
+      const requestTime = performance.now() - requestStart;
 
-      console.log('📡 Resposta do servidor:', res.status, res.statusText);
+      console.log('📡 Resposta do servidor:', {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+        type: res.type,
+        url: res.url,
+        headers: [...res.headers.entries()],
+        responseTime: `${requestTime.toFixed(2)}ms`
+      });
 
-      const data = await res.json().catch(() => ({}));
+      let data = {};
+      try {
+        const responseText = await res.text();
+        console.log('📄 Texto bruto da resposta:', responseText);
+        data = responseText ? JSON.parse(responseText) : {};
+        console.log('📊 Dados parseados da resposta:', data);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear JSON da resposta:', parseError);
+        console.log('⚠️ Continuando com objeto vazio');
+      }
       
       if (!res.ok) {
-        console.error('❌ Erro no login:', data);
-        throw new Error(data?.error || `Erro ${res.status}: ${res.statusText}`);
+        console.error('❌ Erro no login - Status:', res.status);
+        console.error('❌ Erro no login - Data:', data);
+        console.error('❌ Erro no login - Headers:', [...res.headers.entries()]);
+        throw new Error(data?.error || `Erro HTTP ${res.status}: ${res.statusText}`);
       }
 
       const { token } = data;
       if (!token) {
+        console.error('❌ Token não encontrado na resposta:', data);
         throw new Error('Token não recebido do servidor');
       }
 
+      console.log('🎫 Token recebido:', token.substring(0, 20) + '...');
+      
       localStorage.setItem('wi_user', username);
       localStorage.setItem('wi_token', token);
       localStorage.setItem('servers_authorized', 'true'); // Marcar como autorizado
@@ -918,11 +1027,35 @@ function initializeEmojiPicker() {
       currentToken = token;
       
       console.log('✅ Login bem-sucedido para:', username);
+      console.log('✅ Dados armazenados no localStorage');
       setStatus('Autenticado com sucesso!', 'success');
       setTimeout(() => showWhatsAppInterface(), 500);
       
     } catch (err) {
-      console.error('❌ Erro no login:', err);
+      console.error('❌ Erro detalhado no login:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        cause: err.cause
+      });
+      
+      // Logs específicos para diferentes tipos de erro
+      if (err.name === 'TypeError') {
+        console.error('🔍 TypeError - Provavelmente problema de rede ou CORS:', err.message);
+        if (err.message.includes('Failed to fetch')) {
+          console.error('🌐 Failed to fetch - Possíveis causas:');
+          console.error('   1. Servidor não está rodando');
+          console.error('   2. CORS bloqueado');
+          console.error('   3. Mixed Content (HTTP/HTTPS)');
+          console.error('   4. Certificado SSL rejeitado');
+        }
+      } else if (err.name === 'SyntaxError') {
+        console.error('📝 SyntaxError - Resposta não é JSON válido:', err.message);
+      } else if (err.name === 'AbortError') {
+        console.error('⏱️ AbortError - Requisição foi cancelada:', err.message);
+      } else {
+        console.error('❓ Tipo de erro desconhecido:', err.name);
+      }
       
       // Tratar diferentes tipos de erro
       if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
@@ -937,11 +1070,14 @@ function initializeEmojiPicker() {
             window.location.href = './setup.html';
           }, 2000);
         } else {
+          console.error('💻 Executando localmente - Servidor provavelmente não está rodando');
           setStatus('❌ Servidor não acessível. Verifique se os servidores estão rodando.', 'error');
         }
       } else if (err.message.includes('NetworkError') || err.message.includes('CORS')) {
+        console.error('🌐 Erro de rede/CORS detectado');
         setStatus('❌ Erro de rede ou CORS. Verifique a configuração dos servidores.', 'error');
       } else {
+        console.error('❓ Erro genérico:', err.message);
         setStatus(err.message || 'Erro ao autenticar', 'error');
       }
     }
@@ -955,72 +1091,187 @@ function initializeEmojiPicker() {
     setLoading(true, testBtn);
     testBtn.textContent = '🧪 Testando...';
     
-    console.log('🧪 === TESTE DE CONECTIVIDADE ===');
-    console.log('🌍 Configuração:', { hostname, isGitHub, isLocalhost, API_URL, WHATSAPP_URL });
+    console.log('🧪 === TESTE DE CONECTIVIDADE DETALHADO ===');
+    console.log('🌍 Configuração completa:', { 
+      hostname: location.hostname,
+      protocol: location.protocol,
+      port: location.port,
+      origin: location.origin,
+      isGitHub, 
+      isLocalhost, 
+      API_URL, 
+      WHATSAPP_URL 
+    });
     
     try {
       setStatus('🔍 Testando conectividade com servidores...', 'info');
       
       // Teste 1: Servidor Auth
-      console.log('🔧 Testando Auth Server...');
+      console.log('🔧 === TESTE 1: SERVIDOR AUTH ===');
+      console.log('🎯 URL de teste:', API_URL.replace('/api', ''));
+      
       try {
+        const authTestStart = performance.now();
         const authTest = await fetch(API_URL.replace('/api', ''), {
           method: 'GET',
           mode: 'cors'
         });
-        console.log('✅ Auth Server:', authTest.status, authTest.statusText);
+        const authTestTime = performance.now() - authTestStart;
         
-        const authData = await authTest.json();
-        console.log('📋 Auth Response:', authData);
+        console.log('✅ Auth Server - Resposta recebida:', {
+          status: authTest.status,
+          statusText: authTest.statusText,
+          ok: authTest.ok,
+          type: authTest.type,
+          url: authTest.url,
+          headers: [...authTest.headers.entries()],
+          responseTime: `${authTestTime.toFixed(2)}ms`
+        });
         
-        setStatus('✅ Auth Server OK', 'success');
+        let authData = {};
+        try {
+          const authResponseText = await authTest.text();
+          console.log('📄 Auth Response (texto):', authResponseText);
+          authData = authResponseText ? JSON.parse(authResponseText) : {};
+          console.log('📋 Auth Response (parseado):', authData);
+        } catch (parseError) {
+          console.error('❌ Erro ao parsear resposta do Auth Server:', parseError);
+        }
+        
+        if (authTest.ok) {
+          console.log('✅ Auth Server: SUCESSO');
+          setStatus('✅ Auth Server OK', 'success');
+        } else {
+          console.error('❌ Auth Server retornou erro:', authTest.status);
+          throw new Error(`Auth Server HTTP ${authTest.status}: ${authTest.statusText}`);
+        }
+        
       } catch (authError) {
-        console.error('❌ Auth Server Error:', authError);
+        console.error('❌ Auth Server - Erro detalhado:', {
+          name: authError.name,
+          message: authError.message,
+          stack: authError.stack,
+          cause: authError.cause
+        });
+        
+        if (authError.name === 'TypeError') {
+          console.error('🔍 TypeError no Auth Server - Diagnóstico:');
+          if (authError.message.includes('Failed to fetch')) {
+            console.error('   • Failed to fetch - Servidor provavelmente não está acessível');
+            console.error('   • Verifique se o servidor auth está rodando na porta 8766');
+            console.error('   • Verifique se o certificado HTTPS foi aceito');
+          } else if (authError.message.includes('NetworkError')) {
+            console.error('   • Network Error - Problema de conectividade ou CORS');
+          }
+        }
+        
         setStatus(`❌ Auth Server Error: ${authError.message}`, 'error');
         throw authError;
       }
       
       // Teste 2: Health endpoint
-      console.log('🔧 Testando Health endpoint...');
+      console.log('🔧 === TESTE 2: HEALTH ENDPOINT ===');
+      console.log('🎯 URL de teste:', `${API_URL}/health`);
+      
       try {
+        const healthTestStart = performance.now();
         const healthTest = await fetch(`${API_URL}/health`, {
           method: 'GET',
           mode: 'cors'
         });
-        console.log('✅ Health endpoint:', healthTest.status, healthTest.statusText);
+        const healthTestTime = performance.now() - healthTestStart;
         
-        const healthData = await healthTest.json();
-        console.log('📋 Health Response:', healthData);
+        console.log('✅ Health endpoint - Resposta recebida:', {
+          status: healthTest.status,
+          statusText: healthTest.statusText,
+          ok: healthTest.ok,
+          type: healthTest.type,
+          url: healthTest.url,
+          headers: [...healthTest.headers.entries()],
+          responseTime: `${healthTestTime.toFixed(2)}ms`
+        });
         
-        setStatus('✅ Todos os testes OK! Você pode tentar fazer login agora.', 'success');
+        let healthData = {};
+        try {
+          const healthResponseText = await healthTest.text();
+          console.log('📄 Health Response (texto):', healthResponseText);
+          healthData = healthResponseText ? JSON.parse(healthResponseText) : {};
+          console.log('📋 Health Response (parseado):', healthData);
+        } catch (parseError) {
+          console.error('❌ Erro ao parsear resposta do Health endpoint:', parseError);
+        }
         
-        // Se estamos no GitHub Pages, marcar como autorizado
-        if (isGitHub) {
-          localStorage.setItem('servers_authorized', 'true');
-          console.log('✅ Servidores marcados como autorizados');
+        if (healthTest.ok) {
+          console.log('✅ Health endpoint: SUCESSO');
+          setStatus('✅ Todos os testes OK! Você pode tentar fazer login agora.', 'success');
+          
+          // Se estamos no GitHub Pages, marcar como autorizado
+          if (isGitHub) {
+            localStorage.setItem('servers_authorized', 'true');
+            console.log('✅ Servidores marcados como autorizados no localStorage');
+          }
+        } else {
+          console.error('❌ Health endpoint retornou erro:', healthTest.status);
+          throw new Error(`Health endpoint HTTP ${healthTest.status}: ${healthTest.statusText}`);
         }
         
       } catch (healthError) {
-        console.error('❌ Health endpoint Error:', healthError);
+        console.error('❌ Health endpoint - Erro detalhado:', {
+          name: healthError.name,
+          message: healthError.message,
+          stack: healthError.stack,
+          cause: healthError.cause
+        });
+        
+        if (healthError.name === 'TypeError') {
+          console.error('🔍 TypeError no Health endpoint - Diagnóstico:');
+          if (healthError.message.includes('Failed to fetch')) {
+            console.error('   • Failed to fetch - API não está acessível');
+            console.error('   • Verifique se a rota /api/health existe');
+            console.error('   • Verifique se o middleware CORS está funcionando');
+          }
+        }
+        
         setStatus(`❌ Health endpoint Error: ${healthError.message}`, 'error');
         throw healthError;
       }
       
+      console.log('🎉 === TODOS OS TESTES CONCLUÍDOS COM SUCESSO ===');
+      
     } catch (error) {
-      console.error('❌ Teste de conectividade falhou:', error);
+      console.error('❌ === TESTE DE CONECTIVIDADE FALHOU ===');
+      console.error('🔍 Erro geral:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
       
       if (isGitHub) {
+        console.error('🔒 GitHub Pages - Problema de Mixed Content detectado');
+        console.error('💡 Soluções possíveis:');
+        console.error('   1. Executar o script iniciar-portatil-funcional.bat');
+        console.error('   2. Acessar https://127.0.0.1:8766 e aceitar o certificado');
+        console.error('   3. Usar o setup.html para configurar os certificados');
+        
         setStatus('❌ Mixed Content detectado! Redirecionando para setup...', 'error');
         localStorage.removeItem('servers_authorized');
         setTimeout(() => {
           window.location.href = './setup.html';
         }, 2000);
       } else {
+        console.error('💻 Execução local - Servidor não está acessível');
+        console.error('💡 Soluções possíveis:');
+        console.error('   1. Verificar se o script iniciar-portatil-funcional.bat foi executado');
+        console.error('   2. Verificar se as portas 8765/8766 estão livres');
+        console.error('   3. Verificar se o Node.js está funcionando');
+        
         setStatus('❌ Servidores não estão acessíveis. Verifique se estão rodando.', 'error');
       }
     } finally {
       setLoading(false, testBtn);
       testBtn.textContent = originalText;
+      console.log('🧪 === FIM DOS TESTES DE CONECTIVIDADE ===');
     }
   }
 
@@ -1042,133 +1293,238 @@ function initializeEmojiPicker() {
 
   function connectWebSocket() {
     if (socket) {
+      console.log('🔌 Desconectando WebSocket existente...');
       socket.disconnect();
     }
 
-    console.log('🔌 Conectando WebSocket para:', WHATSAPP_URL);
+    console.log('🔌 === INICIANDO CONEXÃO WEBSOCKET ===');
+    console.log('🎯 URL de conexão:', WHATSAPP_URL);
+    console.log('⚙️ Configurações do Socket.IO:', {
+      transports: ['websocket', 'polling'],
+      timeout: 5000,
+      forceNew: true
+    });
 
+    const connectionStart = performance.now();
     socket = io(WHATSAPP_URL, {
       transports: ['websocket', 'polling'],
       timeout: 5000
     });
 
     socket.on('connect', () => {
-      console.log('✅ WebSocket conectado ao:', WHATSAPP_URL);
+      const connectionTime = performance.now() - connectionStart;
+      console.log('✅ === WEBSOCKET CONECTADO ===');
+      console.log('🎯 URL conectada:', WHATSAPP_URL);
+      console.log('⏱️ Tempo de conexão:', `${connectionTime.toFixed(2)}ms`);
+      console.log('🆔 Socket ID:', socket.id);
+      console.log('🚦 Transport usado:', socket.io.engine.transport.name);
+      
       updateConnectionStatus('connecting', 'Conectando WhatsApp...');
       
       // Setup periodic sync for message updates
-      if (window.messageSyncInterval) clearInterval(window.messageSyncInterval);
+      if (window.messageSyncInterval) {
+        console.log('🧹 Limpando intervalo de sincronização de mensagens existente');
+        clearInterval(window.messageSyncInterval);
+      }
       window.messageSyncInterval = setInterval(() => {
         if (currentChat && socket?.connected) {
           const lastMessage = messages[currentChat.id]?.length > 0
             ? messages[currentChat.id][messages[currentChat.id].length - 1]
             : null;
           
+          console.log('🔄 Sincronizando mensagens para chat:', currentChat.id);
           socket.emit('sync-messages', {
             chatId: currentChat.id,
             lastTimestamp: lastMessage ? lastMessage.timestamp : 0
           });
         }
       }, 5000); // Sync every 5 seconds
+      console.log('⏰ Intervalo de sincronização de mensagens configurado (5s)');
       
       // Setup periodic chat list sync
-      if (window.chatSyncInterval) clearInterval(window.chatSyncInterval);
+      if (window.chatSyncInterval) {
+        console.log('🧹 Limpando intervalo de sincronização de chats existente');
+        clearInterval(window.chatSyncInterval);
+      }
       window.chatSyncInterval = setInterval(() => {
         if (socket?.connected) {
+          console.log('🔄 Sincronizando lista de chats...');
           socket.emit('get-chats');
         }
       }, 30000); // Sync chat list every 30 seconds
+      console.log('⏰ Intervalo de sincronização de chats configurado (30s)');
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('🔌 WebSocket desconectado:', reason);
+      console.log('🔌 === WEBSOCKET DESCONECTADO ===');
+      console.log('❌ Motivo da desconexão:', reason);
+      console.log('🕐 Timestamp:', new Date().toLocaleTimeString());
+      
+      // Log específico por tipo de desconexão
+      switch (reason) {
+        case 'io server disconnect':
+          console.log('🔍 Diagnóstico: Servidor desconectou o cliente');
+          break;
+        case 'io client disconnect':
+          console.log('🔍 Diagnóstico: Cliente desconectou voluntariamente');
+          break;
+        case 'ping timeout':
+          console.log('🔍 Diagnóstico: Timeout de ping - conexão perdida');
+          break;
+        case 'transport close':
+          console.log('🔍 Diagnóstico: Transport fechado inesperadamente');
+          break;
+        case 'transport error':
+          console.log('🔍 Diagnóstico: Erro no transport de conexão');
+          break;
+        default:
+          console.log('🔍 Diagnóstico: Motivo de desconexão não identificado');
+      }
+      
       updateConnectionStatus('disconnected', 'Desconectado');
       showConfigAlert();
       
       // Clear sync intervals
       if (window.messageSyncInterval) {
+        console.log('🧹 Limpando intervalo de sincronização de mensagens');
         clearInterval(window.messageSyncInterval);
         window.messageSyncInterval = null;
       }
       if (window.chatSyncInterval) {
+        console.log('🧹 Limpando intervalo de sincronização de chats');
         clearInterval(window.chatSyncInterval);
         window.chatSyncInterval = null;
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log('🔌 WebSocket desconectado');
-      updateConnectionStatus('disconnected', 'Desconectado');
-    });
-
     socket.on('connect_error', (error) => {
-      console.log('❌ Erro de conexão WebSocket:', error);
+      console.log('❌ === ERRO DE CONEXÃO WEBSOCKET ===');
+      console.log('� Detalhes do erro:', {
+        name: error.name,
+        message: error.message,
+        description: error.description,
+        context: error.context,
+        type: error.type,
+        stack: error.stack
+      });
+      
+      // Diagnóstico específico
+      if (error.message?.includes('xhr poll error')) {
+        console.error('🔍 XHR Poll Error - Problema de conectividade HTTP');
+        console.error('   • Verifique se o servidor WhatsApp está rodando na porta 3002');
+        console.error('   • Verifique se o certificado HTTPS foi aceito');
+      } else if (error.message?.includes('websocket error')) {
+        console.error('🔍 WebSocket Error - Problema de conectividade WebSocket');
+        console.error('   • Tentando fallback para polling...');
+      } else {
+        console.error('🔍 Erro de conexão genérico:', error.message);
+      }
+      
       showConfigAlert();
     });
 
     socket.on('error', (error) => {
-      console.log('❌ Erro WebSocket:', error);
+      console.log('❌ === ERRO WEBSOCKET GERAL ===');
+      console.log('🔍 Erro recebido:', error);
+      console.log('🕐 Timestamp:', new Date().toLocaleTimeString());
       showConfigAlert();
     });
 
     socket.on('whatsapp:status', (data) => {
-      console.log('📱 Status WhatsApp:', data);
+      console.log('📱 === STATUS WHATSAPP RECEBIDO ===');
+      console.log('📊 Dados do status:', data);
+      console.log('🏷️ Status atual:', data.status);
+      if (data.chats) {
+        console.log('💬 Chats recebidos:', data.chats.length);
+      }
+      if (data.qr) {
+        console.log('📱 QR Code presente:', data.qr.substring(0, 50) + '...');
+      }
       handleWhatsAppStatus(data);
     });
 
     socket.on('whatsapp:qr', (data) => {
-      console.log('📱 QR Code recebido via evento específico');
+      console.log('📱 === QR CODE RECEBIDO VIA EVENTO ESPECÍFICO ===');
       console.log('🔍 QR Data length:', data.qr?.length || 'undefined');
+      console.log('📊 Dados completos:', data);
       
       if (data.qr) {
+        console.log('✅ QR Code válido recebido');
         showQRCode(data.qr);
         showQRScreen();
         updateConnectionStatus('connecting', 'QR Code disponível - escaneie com seu celular');
       } else {
-        console.error('❌ QR Code data está vazio');
+        console.error('❌ QR Code data está vazio ou inválido');
       }
     });
 
     socket.on('whatsapp:message', (message) => {
-      console.log('📨 Mensagem recebida via whatsapp:message:', message);
+      console.log('📨 === MENSAGEM RECEBIDA VIA whatsapp:message ===');
+      console.log('📊 Dados da mensagem:', {
+        chatId: message.chatId,
+        fromMe: message.fromMe,
+        timestamp: message.timestamp,
+        bodyLength: message.body?.length || 0,
+        hasMedia: message.hasMedia,
+        type: message.type
+      });
+      console.log('💬 Conteúdo da mensagem:', message.body?.substring(0, 100) + (message.body?.length > 100 ? '...' : ''));
       handleNewMessage(message);
     });
 
     socket.on('whatsapp:chats', (newChats) => {
-      console.log('💬 Chats atualizados:', newChats.length);
+      console.log('💬 === CHATS ATUALIZADOS ===');
+      console.log('📊 Quantidade de chats:', newChats.length);
+      console.log('📋 Primeiros 5 chats:', newChats.slice(0, 5).map(chat => ({
+        id: chat.id,
+        name: chat.name,
+        lastMessage: chat.lastMessage?.body?.substring(0, 30) + '...'
+      })));
+      
       chats = newChats;
       renderChats();
       
       // Pré-carregar fotos de perfil dos chats atualizados
       const chatIds = newChats.map(chat => chat.id);
+      console.log('📸 Pré-carregando fotos de perfil para', chatIds.length, 'chats');
       preloadProfilePictures(chatIds);
     });
     
     // Novos handlers para sincronização aprimorada
     socket.on('message:new', (message) => {
-      console.log('📨 Mensagem recebida via message:new:', message);
+      console.log('📨 === MENSAGEM RECEBIDA VIA message:new ===');
+      console.log('📊 Dados da mensagem:', {
+        chatId: message.chatId,
+        fromMe: message.fromMe,
+        timestamp: message.timestamp,
+        bodyLength: message.body?.length || 0
+      });
       handleNewMessage(message);
     });
     
     socket.on('chats:update', (newChats) => {
-      console.log('📋 Lista de chats sincronizada:', newChats.length);
+      console.log('📋 === LISTA DE CHATS SINCRONIZADA ===');
+      console.log('📊 Total de chats sincronizados:', newChats.length);
       chats = newChats;
       renderChats();
       
       // Pré-carregar fotos de perfil quando chats são sincronizados
       const chatIds = newChats.map(chat => chat.id);
+      console.log('📸 Pré-carregando fotos de perfil durante sincronização');
       preloadProfilePictures(chatIds);
     });
 
     // Handler para atualizações de status de mensagens
     socket.on('message:status', (statusUpdate) => {
-      console.log('📊 Status de mensagem atualizado:', statusUpdate);
+      console.log('📊 === STATUS DE MENSAGEM ATUALIZADO ===');
+      console.log('📊 Update:', statusUpdate);
       updateMessageStatus(statusUpdate);
     });
 
     // Handler para mudanças de foto de perfil
     socket.on('profile:changed', (profileUpdate) => {
-      console.log('👤 Foto de perfil alterada:', profileUpdate);
+      console.log('👤 === FOTO DE PERFIL ALTERADA ===');
+      console.log('👤 Update:', profileUpdate);
       
       // Atualizar foto de perfil em tempo real
       updateProfilePictureInRealTime(profileUpdate.contactId, profileUpdate.hasProfilePicture);
@@ -1176,6 +1532,7 @@ function initializeEmojiPicker() {
       // Atualizar cache se o contato está na lista de chats
       const chatIndex = chats.findIndex(chat => chat.id === profileUpdate.contactId);
       if (chatIndex !== -1) {
+        console.log('🔄 Atualizando foto no cache do chat:', profileUpdate.contactId);
         chats[chatIndex].profilePicture = profileUpdate.hasProfilePicture 
           ? `${WHATSAPP_URL}/api/cached-profile-picture/${profileUpdate.contactId}`
           : null;
@@ -1187,14 +1544,18 @@ function initializeEmojiPicker() {
 
     // Handlers para indicador de digitação
     socket.on('typing:start', (data) => {
-      console.log('⌨️ Alguém começou a digitar:', data);
+      console.log('⌨️ === DIGITAÇÃO INICIADA ===');
+      console.log('📊 Dados:', data);
       showTypingIndicator(data.chatId, data.userName);
     });
 
     socket.on('typing:stop', (data) => {
-      console.log('⌨️ Alguém parou de digitar:', data);
+      console.log('⌨️ === DIGITAÇÃO PARADA ===');
+      console.log('📊 Dados:', data);
       hideTypingIndicator(data.chatId);
     });
+
+    console.log('🔌 === WEBSOCKET CONFIGURADO - AGUARDANDO CONEXÃO ===');
   }
 
   function handleWhatsAppStatus(data) {
