@@ -120,12 +120,42 @@
   }
 
   function getContactName(chatId) {
+    const chat = chats.find(c => c.id === chatId);
+    if (chat && chat.name) return chat.name;
+    
     if (chatId.endsWith('@g.us')) {
       return 'Grupo';
     }
     // Extrair número do ID
     const number = chatId.split('@')[0];
     return number.replace(/(\d{2})(\d{5})(\d{4})/, '+$1 $2-$3');
+  }
+  
+  function requestChatsUpdate() {
+    if (socket && socket.connected) {
+      socket.emit('get-chats');
+      console.log('🔄 Solicitando atualização da lista de chats');
+    }
+  }
+  
+  function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+    } else {
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
   }
 
   function getAvatarEmoji(name) {
@@ -228,12 +258,45 @@
     socket.on('connect', () => {
       console.log('✅ WebSocket conectado ao:', WHATSAPP_URL);
       updateConnectionStatus('connecting', 'Conectando WhatsApp...');
+      
+      // Setup periodic sync for message updates
+      if (window.messageSyncInterval) clearInterval(window.messageSyncInterval);
+      window.messageSyncInterval = setInterval(() => {
+        if (currentChat && socket && socket.connected) {
+          const lastMessage = messages[currentChat.id] && messages[currentChat.id].length > 0 
+            ? messages[currentChat.id][messages[currentChat.id].length - 1]
+            : null;
+          
+          socket.emit('sync-messages', {
+            chatId: currentChat.id,
+            lastTimestamp: lastMessage ? lastMessage.timestamp : 0
+          });
+        }
+      }, 5000); // Sync every 5 seconds
+      
+      // Setup periodic chat list sync
+      if (window.chatSyncInterval) clearInterval(window.chatSyncInterval);
+      window.chatSyncInterval = setInterval(() => {
+        if (socket && socket.connected) {
+          socket.emit('get-chats');
+        }
+      }, 30000); // Sync chat list every 30 seconds
     });
 
     socket.on('disconnect', (reason) => {
       console.log('🔌 WebSocket desconectado:', reason);
       updateConnectionStatus('disconnected', 'Desconectado');
       showConfigAlert();
+      
+      // Clear sync intervals
+      if (window.messageSyncInterval) {
+        clearInterval(window.messageSyncInterval);
+        window.messageSyncInterval = null;
+      }
+      if (window.chatSyncInterval) {
+        clearInterval(window.chatSyncInterval);
+        window.chatSyncInterval = null;
+      }
     });
 
     socket.on('disconnect', () => {
@@ -279,6 +342,18 @@
       chats = newChats;
       renderChats();
     });
+    
+    // Novos handlers para sincronização aprimorada
+    socket.on('message:new', (message) => {
+      console.log('📨 Nova mensagem sincronizada:', message);
+      handleNewMessage(message);
+    });
+    
+    socket.on('chats:update', (newChats) => {
+      console.log('📋 Lista de chats sincronizada:', newChats.length);
+      chats = newChats;
+      renderChats();
+    });
   }
 
   function handleWhatsAppStatus(data) {
@@ -302,6 +377,8 @@
         if (newChats) {
           chats = newChats;
           renderChats();
+          // Carregar histórico de mensagens para todos os chats principais
+          loadInitialMessageHistory();
         }
         showMainInterface();
         break;
@@ -416,6 +493,42 @@
     } finally {
       setLoading(false, restartBtn);
     }
+  }
+
+  // === CHAT HISTORY MANAGEMENT ===
+
+  async function loadInitialMessageHistory() {
+    if (!currentToken || chats.length === 0) return;
+    
+    console.log('📚 Carregando histórico inicial de mensagens...');
+    
+    // Carregar mensagens para os primeiros 10 chats (mais ativos)
+    const priorityChats = chats.slice(0, 10);
+    
+    for (const chat of priorityChats) {
+      try {
+        console.log(`📨 Carregando histórico para: ${chat.name || chat.id}`);
+        
+        const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/chat/${encodeURIComponent(chat.id)}/messages?limit=20`, {
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && data.messages.length > 0) {
+            messages[chat.id] = data.messages.reverse(); // Ordem cronológica
+            console.log(`✅ ${data.messages.length} mensagens carregadas para ${chat.name || chat.id}`);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Erro ao carregar histórico para ${chat.id}:`, error);
+      }
+      
+      // Pequeno delay para não sobrecarregar o servidor
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    console.log('✅ Histórico inicial carregado');
   }
 
   // === CHAT MANAGEMENT ===
@@ -535,26 +648,68 @@
       </div>
     `).join('');
 
-    // Scroll to bottom
-    messagesArea.scrollTop = messagesArea.scrollHeight;
+    // Scroll to bottom with smooth behavior
+    setTimeout(() => {
+      messagesArea.scrollTo({
+        top: messagesArea.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 100);
+    
+    // Mark chat as read (reset unread count)
+    const chat = chats.find(c => c.id === chatId);
+    if (chat && chat.unreadCount > 0) {
+      chat.unreadCount = 0;
+      renderChats(); // Update chat list to remove unread indicator
+    }
   }
 
   function handleNewMessage(message) {
+    console.log('📨 Processando nova mensagem:', message);
     const chatId = message.chatId;
     
-    // Update messages
+    // Verificar se é uma mensagem duplicada
+    if (messages[chatId]) {
+      const isDuplicate = messages[chatId].some(msg => 
+        msg.timestamp === message.timestamp && msg.body === message.body
+      );
+      if (isDuplicate) {
+        console.log('⚠️ Mensagem duplicada ignorada');
+        return;
+      }
+    }
+    
+    // Initialize messages array if not exists
     if (!messages[chatId]) {
       messages[chatId] = [];
     }
-    messages[chatId].push(message);
+    
+    // Add message in chronological order
+    const insertIndex = messages[chatId].findIndex(msg => msg.timestamp > message.timestamp);
+    if (insertIndex === -1) {
+      messages[chatId].push(message);
+    } else {
+      messages[chatId].splice(insertIndex, 0, message);
+    }
 
-    // If current chat, update view
+    // If current chat, update view with smooth scroll
     if (currentChat && currentChat.id === chatId) {
       renderMessages(chatId);
+      
+      // Notificação visual se não for mensagem própria
+      if (!message.fromMe) {
+        console.log('💬 Nova mensagem no chat ativo');
+      }
+    } else {
+      // Notificação para chat não ativo
+      if (!message.fromMe) {
+        console.log(`💬 Nova mensagem de: ${getContactName(chatId)}`);
+      }
     }
 
     // Update chat list (move to top and update last message)
-    const chatIndex = chats.findIndex(c => c.id === chatId);
+    let chatIndex = chats.findIndex(c => c.id === chatId);
+    
     if (chatIndex !== -1) {
       const chat = chats[chatIndex];
       chat.lastMessage = {
@@ -563,10 +718,22 @@
         fromMe: message.fromMe
       };
       
-      // Move to top
-      chats.splice(chatIndex, 1);
-      chats.unshift(chat);
+      // Increment unread count if not current chat and not from me
+      if (!message.fromMe && (!currentChat || currentChat.id !== chatId)) {
+        chat.unreadCount = (chat.unreadCount || 0) + 1;
+      }
+      
+      // Move to top only if it's not already at top
+      if (chatIndex > 0) {
+        chats.splice(chatIndex, 1);
+        chats.unshift(chat);
+      }
+      
       renderChats();
+    } else {
+      // Chat não existe na lista, recarregar chats
+      console.log('🔄 Chat não encontrado, solicitando atualização da lista');
+      requestChatsUpdate();
     }
   }
 
