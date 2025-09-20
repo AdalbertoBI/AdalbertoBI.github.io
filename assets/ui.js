@@ -36,19 +36,22 @@ function showWhatsAppInterface() {
     displayUser.textContent = window.WhatIntegra.state.currentUser;
   }
   
+  // Inicializar módulo WhatsApp
+  if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.initializeWhatsApp) {
+    console.log('🔄 Inicializando módulo WhatsApp...');
+    window.WhatIntegra.whatsapp.initializeWhatsApp();
+  }
+  
   // Mostrar tela QR inicialmente enquanto conecta
   showQRScreen();
   
-  // Conectar WebSocket se ainda não estiver conectado
+  // Conectar WebSocket
   if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.connectWebSocket) {
+    console.log('🔌 Conectando WebSocket...');
     window.WhatIntegra.whatsapp.connectWebSocket();
   } else {
-    console.log('⚠️ Módulo WhatsApp não carregado ainda, mostrando QR screen');
-    // Por enquanto, simular conexão do QR após alguns segundos
-    setTimeout(() => {
-      console.log('🔄 Simulando transição QR -> Interface principal');
-      showMainInterface();
-    }, 3000);
+    console.error('❌ Módulo WhatsApp não disponível');
+    window.WhatIntegra.utils.setStatus('Erro: Módulo WhatsApp não carregado', 'error');
   }
 }
 

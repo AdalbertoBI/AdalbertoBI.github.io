@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 WhatIntegra inicializando...');
   
   // Verificar se todos os módulos estão carregados
-  const requiredModules = ['config', 'utils', 'connectivity', 'auth', 'ui'];
+  const requiredModules = ['config', 'utils', 'connectivity', 'auth', 'ui', 'whatsapp'];
   const missingModules = requiredModules.filter(module => !window.WhatIntegra[module]);
   
   if (missingModules.length > 0) {
