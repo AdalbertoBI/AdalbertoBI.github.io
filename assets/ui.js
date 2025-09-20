@@ -30,42 +30,54 @@ function showLoginScreen() {
 function showWhatsAppInterface() {
   console.log('🚀 Mostrando interface WhatsApp');
   
+  // Primeiro, mostrar a tela do WhatsApp
   if (loginScreen) loginScreen.classList.add('hidden');
   if (whatsappScreen) whatsappScreen.classList.remove('hidden');
   if (displayUser && window.WhatIntegra.state.currentUser) {
     displayUser.textContent = window.WhatIntegra.state.currentUser;
   }
   
-  // Inicializar módulo WhatsApp
-  if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.initializeWhatsApp) {
-    console.log('🔄 Inicializando módulo WhatsApp...');
-    window.WhatIntegra.whatsapp.initializeWhatsApp();
-  }
-  
-  // Mostrar tela QR inicialmente enquanto conecta
-  showQRScreen();
-  
-  // Conectar WebSocket
-  if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.connectWebSocket) {
-    console.log('🔌 Conectando WebSocket...');
-    window.WhatIntegra.whatsapp.connectWebSocket();
-  } else {
-    console.error('❌ Módulo WhatsApp não disponível');
-    window.WhatIntegra.utils.setStatus('Erro: Módulo WhatsApp não carregado', 'error');
-  }
+  // Aguardar um frame para garantir que o DOM está renderizado
+  setTimeout(() => {
+    // Inicializar módulo WhatsApp
+    if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.initializeWhatsApp) {
+      console.log('🔄 Inicializando módulo WhatsApp...');
+      window.WhatIntegra.whatsapp.initializeWhatsApp();
+    }
+    
+    // Mostrar tela QR inicialmente enquanto conecta
+    showQRScreen();
+    
+    // Conectar WebSocket
+    if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.connectWebSocket) {
+      console.log('🔌 Conectando WebSocket...');
+      window.WhatIntegra.whatsapp.connectWebSocket();
+    } else {
+      console.error('❌ Módulo WhatsApp não disponível');
+      window.WhatIntegra.utils.setStatus('Erro: Módulo WhatsApp não carregado', 'error');
+    }
+  }, 100); // 100ms para garantir renderização
 }
 
 function showQRScreen() {
   console.log('📱 Mostrando tela QR');
   
-  if (!qrScreen) {
+  // Re-selecionar elementos para garantir que existem após a tela estar visível
+  const qrScreenEl = document.getElementById('qrScreen');
+  const mainInterfaceEl = document.getElementById('mainInterface');
+  const welcomeScreenEl = document.getElementById('welcomeScreen');
+  
+  if (!qrScreenEl) {
     console.error('❌ Elemento qrScreen não encontrado!');
+    console.log('🔍 Elementos disponíveis:', document.querySelectorAll('[id*="qr"], [id*="QR"]'));
     return;
   }
   
-  if (qrScreen) qrScreen.classList.remove('hidden');
-  if (mainInterface) mainInterface.classList.add('hidden');
-  if (welcomeScreen) welcomeScreen.classList.add('hidden');
+  if (qrScreenEl) qrScreenEl.classList.remove('hidden');
+  if (mainInterfaceEl) mainInterfaceEl.classList.add('hidden');
+  if (welcomeScreenEl) welcomeScreenEl.classList.add('hidden');
+  
+  console.log('✅ Tela QR mostrada com sucesso');
 }
 
 function showMainInterface() {

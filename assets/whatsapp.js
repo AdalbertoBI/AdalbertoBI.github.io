@@ -281,13 +281,18 @@ function showQRCode(qrCode) {
 function renderChats() {
   console.log('💬 Renderizando chats:', chats.length);
   
-  if (!chatsListEl) {
+  // Re-selecionar elemento para garantir que existe
+  const chatsListElement = document.getElementById('chatsList');
+  
+  if (!chatsListElement) {
     console.error('❌ Elemento chatsList não encontrado');
+    console.log('🔍 Tentando encontrar elementos relacionados:', 
+      document.querySelectorAll('[id*="chat"], [class*="chat"]'));
     return;
   }
 
   if (!chats || chats.length === 0) {
-    chatsListEl.innerHTML = `
+    chatsListElement.innerHTML = `
       <div class="no-chats">
         <div class="no-chats-icon">💬</div>
         <p>Nenhuma conversa encontrada</p>
@@ -318,7 +323,8 @@ function renderChats() {
     `;
   }).join('');
 
-  chatsListEl.innerHTML = chatsHTML;
+  chatsListElement.innerHTML = chatsHTML;
+  console.log('✅ Chats renderizados com sucesso');
 }
 
 function selectChat(chatId) {
@@ -463,6 +469,29 @@ function setupEventListeners() {
 function initializeWhatsApp() {
   console.log('🚀 Inicializando módulo WhatsApp');
   
+  // Verificar se os elementos necessários estão disponíveis
+  const requiredElements = [
+    'qrScreen',
+    'qrCode', 
+    'chatsList',
+    'messagesArea',
+    'messageInput',
+    'sendBtn'
+  ];
+  
+  const missingElements = requiredElements.filter(id => !document.getElementById(id));
+  
+  if (missingElements.length > 0) {
+    console.warn('⚠️ Elementos não encontrados:', missingElements);
+    console.log('🔍 Tentando novamente em 500ms...');
+    
+    setTimeout(() => {
+      initializeWhatsApp();
+    }, 500);
+    return;
+  }
+  
+  console.log('✅ Todos os elementos DOM encontrados');
   setupEventListeners();
   
   // Conectar WebSocket se autenticado
