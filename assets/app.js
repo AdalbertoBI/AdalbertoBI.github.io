@@ -49,6 +49,37 @@ let currentChat = null;
 let chats = [];
 let messages = {};
 
+// Função auxiliar para testar conectividade e fazer fallback HTTP se necessário
+async function tryConnection(url, options = {}) {
+  console.log('🔗 Testando conexão com:', url);
+  
+  try {
+    const response = await fetch(url, options);
+    console.log('✅ Conexão bem-sucedida:', { url, status: response.status });
+    return { success: true, response, url };
+  } catch (error) {
+    console.log('❌ Falha na conexão HTTPS:', { url, error: error.message });
+    
+    // Se estamos no GitHub e a URL é HTTPS, tentar HTTP como fallback
+    if (isGitHub && url.startsWith('https://')) {
+      const httpUrl = url.replace('https://', 'http://').replace(':8766', ':8765').replace(':3002', ':3001');
+      console.log('🔄 Tentando fallback HTTP:', httpUrl);
+      
+      try {
+        const httpResponse = await fetch(httpUrl, options);
+        console.log('✅ Fallback HTTP bem-sucedido:', { httpUrl, status: httpResponse.status });
+        console.log('⚠️ Aviso: Usando HTTP (menos seguro) devido a problemas com HTTPS');
+        return { success: true, response: httpResponse, url: httpUrl, isHttp: true };
+      } catch (httpError) {
+        console.log('❌ Fallback HTTP também falhou:', { httpUrl, error: httpError.message });
+        throw error; // Lança o erro original
+      }
+    } else {
+      throw error;
+    }
+  }
+}
+
 // Elementos DOM
 const loginScreen = document.getElementById('loginScreen');
 const whatsappScreen = document.getElementById('whatsappScreen');
@@ -925,62 +956,22 @@ function initializeEmojiPicker() {
       console.log('🔐 Tentando login...', { username, API_URL });
       console.log('🌍 Configuração atual:', { hostname, isGitHub, isLocalhost, API_URL, WHATSAPP_URL });
       
-      // Verificar se estamos no GitHub Pages tentando acessar HTTPS local
-      if (isGitHub) {
-        console.log('⚠️ Executando no GitHub Pages - Verificando servidores HTTPS...');
-        
-        // Verificar se os servidores foram autorizados
-        if (!localStorage.getItem('servers_authorized')) {
-          console.log('🔧 Servidores HTTPS não foram autorizados ainda');
-          setStatus('🛠️ Redirecionando para configuração de HTTPS...', 'warning');
-          
-          setTimeout(() => {
-            window.location.href = './setup.html';
-          }, 1500);
-          return;
-        } else {
-          console.log('✅ Servidores HTTPS já foram autorizados pelo setup');
-          setStatus('🔒 Conectando via HTTPS seguro...', 'info');
-          
-          // Testar conectividade antes do login
-          console.log('🧪 Testando conectividade com servidor auth...');
-          try {
-            const testResponse = await fetch(API_URL.replace('/api', ''), {
-              method: 'GET',
-              mode: 'cors'
-            });
-            console.log('✅ Teste de conectividade OK:', testResponse.status);
-            console.log('📊 Headers da resposta de conectividade:', [...testResponse.headers.entries()]);
-          } catch (testError) {
-            console.error('❌ Teste de conectividade falhou:', testError);
-            console.error('🔍 Detalhes do erro de conectividade:', {
-              name: testError.name,
-              message: testError.message,
-              stack: testError.stack
-            });
-            setStatus('❌ Não foi possível conectar ao servidor HTTPS. Verifique se os servidores estão rodando e foram autorizados no setup.html', 'error');
-            
-            // Remover autorização e redirecionar para setup
-            localStorage.removeItem('servers_authorized');
-            setTimeout(() => {
-              window.location.href = './setup.html';
-            }, 3000);
-            return;
-          }
-        }
-      }
-      
       setStatus('Conectando ao servidor...', 'info');
       console.log('📡 Enviando requisição POST para:', `${API_URL}/login`);
       console.log('📋 Dados da requisição:', { username, bodyLength: JSON.stringify({ username, password }).length });
       
       const requestStart = performance.now();
-      const res = await fetch(`${API_URL}/login`, {
+      
+      // Usar a nova função tryConnection que faz fallback para HTTP se necessário
+      const connectionResult = await tryConnection(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
         mode: 'cors'
       });
+      
+      const res = connectionResult.response;
+      const actualUrl = connectionResult.url;
       const requestTime = performance.now() - requestStart;
 
       console.log('📡 Resposta do servidor:', {
@@ -989,9 +980,36 @@ function initializeEmojiPicker() {
         ok: res.ok,
         type: res.type,
         url: res.url,
+        actualUrl: actualUrl,
+        usedHttp: connectionResult.isHttp,
         headers: [...res.headers.entries()],
         responseTime: `${requestTime.toFixed(2)}ms`
       });
+      
+      // Se usamos HTTP como fallback, atualizar as URLs globais
+      if (connectionResult.isHttp) {
+        console.log('� Atualizando URLs para usar HTTP devido ao fallback bem-sucedido');
+        // Extrair a base URL do resultado
+        const baseUrl = actualUrl.replace('/api/login', '');
+        const API_URL_HTTP = baseUrl + '/api';
+        const WHATSAPP_URL_HTTP = baseUrl.replace(':8765', ':3001');
+        
+        // Atualizar as variáveis globais para usar HTTP
+        window.API_URL_ACTUAL = API_URL_HTTP;
+        window.WHATSAPP_URL_ACTUAL = WHATSAPP_URL_HTTP;
+        
+        console.log('🔧 URLs atualizadas para HTTP:', {
+          API_URL_HTTP,
+          WHATSAPP_URL_HTTP
+        });
+        
+        setStatus('⚠️ Conectado via HTTP (menos seguro) devido a problemas com HTTPS', 'warning');
+      } else {
+        // Manter as URLs HTTPS originais
+        window.API_URL_ACTUAL = API_URL;
+        window.WHATSAPP_URL_ACTUAL = WHATSAPP_URL;
+        setStatus('🔒 Conectado via HTTPS seguro', 'success');
+      }
 
       let data = {};
       try {
@@ -1297,8 +1315,11 @@ function initializeEmojiPicker() {
       socket.disconnect();
     }
 
+    // Usar a URL atualizada (pode ser HTTP ou HTTPS)
+    const wsUrl = window.WHATSAPP_URL_ACTUAL || WHATSAPP_URL;
+    
     console.log('🔌 === INICIANDO CONEXÃO WEBSOCKET ===');
-    console.log('🎯 URL de conexão:', WHATSAPP_URL);
+    console.log('🎯 URL de conexão:', wsUrl);
     console.log('⚙️ Configurações do Socket.IO:', {
       transports: ['websocket', 'polling'],
       timeout: 5000,
@@ -1306,7 +1327,7 @@ function initializeEmojiPicker() {
     });
 
     const connectionStart = performance.now();
-    socket = io(WHATSAPP_URL, {
+    socket = io(wsUrl, {
       transports: ['websocket', 'polling'],
       timeout: 5000
     });
@@ -1314,7 +1335,7 @@ function initializeEmojiPicker() {
     socket.on('connect', () => {
       const connectionTime = performance.now() - connectionStart;
       console.log('✅ === WEBSOCKET CONECTADO ===');
-      console.log('🎯 URL conectada:', WHATSAPP_URL);
+      console.log('🎯 URL conectada:', wsUrl);
       console.log('⏱️ Tempo de conexão:', `${connectionTime.toFixed(2)}ms`);
       console.log('🆔 Socket ID:', socket.id);
       console.log('🚦 Transport usado:', socket.io.engine.transport.name);
