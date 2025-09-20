@@ -63,13 +63,21 @@
     if (isGitHubPages) {
       const warningMsg = document.createElement('div');
       warningMsg.innerHTML = `
-        <strong>⚠️ Configuração Necessária</strong><br>
-        Para usar o WhatsApp Web, você precisa primeiro autorizar os servidores locais HTTPS:<br><br>
-        1. <a href="https://127.0.0.1:8766/api/health" target="_blank" style="color: #f59e0b;">Clique aqui para abrir o servidor de autenticação HTTPS</a><br>
-        2. <a href="https://127.0.0.1:3002/api/health" target="_blank" style="color: #f59e0b;">Clique aqui para abrir o servidor WhatsApp HTTPS</a><br>
-        3. Aceite os avisos de segurança (clique em "Avançado" → "Continuar")<br>
-        4. Volte aqui e tente fazer login novamente<br><br>
-        <small>Isso é necessário porque o GitHub Pages usa HTTPS e precisa se comunicar com servidores HTTPS locais.</small>
+        <strong>🔒 Certificados HTTPS Necessários</strong><br>
+        Para usar o WhatsApp Web pelo GitHub Pages, você precisa autorizar os certificados HTTPS locais:<br><br>
+        <div style="background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 6px; margin: 10px 0;">
+          <strong>Passo 1:</strong> <a href="https://127.0.0.1:8766/api/health" target="_blank" style="color: #3b82f6; text-decoration: underline;">Abrir Servidor de Autenticação HTTPS</a><br>
+          <strong>Passo 2:</strong> <a href="https://127.0.0.1:3002/api/health" target="_blank" style="color: #3b82f6; text-decoration: underline;">Abrir Servidor WhatsApp HTTPS</a><br>
+          <strong>Passo 3:</strong> Em cada página, clique em <strong>"Avançado"</strong> → <strong>"Continuar para 127.0.0.1"</strong>
+        </div>
+        <div style="margin-top: 15px;">
+          <button onclick="location.reload()" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+            🔄 Testar Novamente
+          </button>
+        </div>
+        <small style="color: #6b7280; margin-top: 10px; display: block;">
+          ℹ️ Isso é necessário apenas uma vez. Os certificados são autoassinados para segurança local.
+        </small>
       `;
       statusEl.innerHTML = '';
       statusEl.appendChild(warningMsg);
@@ -613,13 +621,61 @@
 
   // === INITIALIZATION ===
 
+  // === URL PARAMETERS HANDLING ===
+  
+  function checkUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('username');
+    const password = urlParams.get('password');
+    
+    if (username && password) {
+      console.log('🔗 Credenciais encontradas na URL, tentando login automático...');
+      
+      // Limpar parâmetros da URL para segurança
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Preencher campos do formulário
+      if (document.getElementById('username')) {
+        document.getElementById('username').value = decodeURIComponent(username);
+      }
+      if (document.getElementById('password')) {
+        document.getElementById('password').value = decodeURIComponent(password);
+      }
+      
+      // Tentar login automático
+      setTimeout(async () => {
+        try {
+          setStatus('Fazendo login automático...', 'info');
+          await login(decodeURIComponent(username), decodeURIComponent(password));
+        } catch (error) {
+          console.error('❌ Falha no login automático:', error);
+          setStatus('Falha no login: ' + error.message, 'error');
+          showMixedContentWarning();
+        }
+      }, 1000);
+      
+      return true;
+    }
+    
+    return false;
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 WhatIntegra carregado');
     
-    // Try to restore session
-    const hasSession = await trySession();
+    // Check URL parameters first
+    const hasUrlParams = checkUrlParams();
     
-    if (!hasSession) {
+    if (!hasUrlParams) {
+      // Try to restore session
+      const hasSession = await trySession();
+      
+      if (!hasSession) {
+        showLoginScreen();
+      }
+    } else {
+      // Show login screen but don't try session restoration
       showLoginScreen();
     }
   });
