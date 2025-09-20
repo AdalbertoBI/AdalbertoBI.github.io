@@ -3,9 +3,9 @@
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-// URLs baseadas no ambiente
-const API_URL = isLocalhost ? 'http://127.0.0.1:8765/api' : 'https://127.0.0.1:8765/api';
-const WHATSAPP_URL = isLocalhost ? 'http://127.0.0.1:3001' : 'https://127.0.0.1:3001';
+// URLs baseadas no ambiente - SEMPRE HTTP para servidores locais
+const API_URL = 'http://127.0.0.1:8765/api';
+const WHATSAPP_URL = 'http://127.0.0.1:3001';
 
 // Debug da configuração
 console.log('🔧 WhatIntegra - Configuração:', {
@@ -754,7 +754,12 @@ function initializeEmojiPicker() {
   function showConfigAlert() {
     if (configAlert) {
       configAlert.style.display = 'block';
-      setStatus('Problema de conexão com servidores locais', 'error');
+      
+      if (isGitHub) {
+        setStatus('⚠️ Mixed Content detectado! Clique no alerta azul acima para configurar.', 'error');
+      } else {
+        setStatus('Problema de conexão com servidores locais', 'error');
+      }
     }
   }
 
@@ -864,6 +869,25 @@ function initializeEmojiPicker() {
   async function login(username, password) {
     try {
       console.log('🔐 Tentando login...', { username, API_URL });
+      
+      // Verificar se estamos no GitHub Pages tentando acessar HTTP local
+      if (isGitHub) {
+        console.log('⚠️ Executando no GitHub Pages - Mixed Content pode ser bloqueado');
+        setStatus('⚠️ Rodando no GitHub Pages: Você precisa autorizar os servidores HTTPS primeiro!', 'warning');
+        
+        // Mostrar instruções específicas
+        showConfigAlert();
+        
+        // Tentar redirecionar para página de setup se não tiver sido feito
+        if (!localStorage.getItem('servers_authorized')) {
+          console.log('🔧 Redirecionando para página de configuração...');
+          setTimeout(() => {
+            window.location.href = './setup.html';
+          }, 2000);
+          return;
+        }
+      }
+      
       setStatus('Conectando ao servidor...', 'info');
       
       const res = await fetch(`${API_URL}/login`, {
@@ -889,6 +913,7 @@ function initializeEmojiPicker() {
 
       localStorage.setItem('wi_user', username);
       localStorage.setItem('wi_token', token);
+      localStorage.setItem('servers_authorized', 'true'); // Marcar como autorizado
       
       currentUser = username;
       currentToken = token;
@@ -902,7 +927,12 @@ function initializeEmojiPicker() {
       
       // Tratar diferentes tipos de erro
       if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-        throw new Error('Servidor não acessível. Verifique se o servidor de autenticação está rodando em ' + API_URL.replace('/api', ''));
+        if (isGitHub) {
+          setStatus('❌ Mixed Content bloqueado! Acesse setup.html para autorizar os servidores HTTPS primeiro.', 'error');
+          showConfigAlert();
+        } else {
+          throw new Error('Servidor não acessível. Verifique se o servidor de autenticação está rodando em ' + API_URL.replace('/api', ''));
+        }
       } else if (err.name === 'TypeError' && err.message.includes('NetworkError')) {
         throw new Error('Erro de rede. Verifique sua conexão e se o servidor está ativo.');
       } else {
