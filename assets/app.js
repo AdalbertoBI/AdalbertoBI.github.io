@@ -2,12 +2,13 @@
 // Configurações
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const isLocalHttpServer = location.port === '8080' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
 // URLs baseadas no ambiente
 // Para GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
-// Para localhost: usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
-const API_URL = isGitHub ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
-const WHATSAPP_URL = isGitHub ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
+// Para localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
+const API_URL = (isGitHub && !isLocalHttpServer) ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
+const WHATSAPP_URL = (isGitHub && !isLocalHttpServer) ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
 
 // Debug da configuração com informações detalhadas
 console.log('🔧 === WHATINTEGRA - CONFIGURAÇÃO INICIAL ===');
@@ -22,14 +23,18 @@ console.log('🌍 Informações do ambiente:', {
 console.log('🎯 Detecção de ambiente:', {
   isGitHub: isGitHub,
   isLocalhost: isLocalhost,
+  isLocalHttpServer: isLocalHttpServer,
   'GitHub detectado por': isGitHub ? 'hostname contém github.io ou github.com' : 'hostname não é GitHub',
-  'Localhost detectado por': isLocalhost ? 'hostname é localhost ou 127.0.0.1' : 'hostname não é localhost'
+  'Localhost detectado por': isLocalhost ? 'hostname é localhost ou 127.0.0.1' : 'hostname não é localhost',
+  'HTTP Server local detectado por': isLocalHttpServer ? 'porta 8080 + localhost/127.0.0.1' : 'não é http-server local',
+  'Configuração final': isLocalHttpServer ? 'FORÇANDO HTTP (Solução 3)' : (isGitHub ? 'GitHub Pages (HTTPS)' : 'Localhost (HTTP)')
 });
 console.log('🔗 URLs configuradas:', {
   API_URL: API_URL,
   WHATSAPP_URL: WHATSAPP_URL,
   'Protocolo da API': API_URL.split(':')[0],
-  'Protocolo do WhatsApp': WHATSAPP_URL.split(':')[0]
+  'Protocolo do WhatsApp': WHATSAPP_URL.split(':')[0],
+  'Configuração aplicada': isLocalHttpServer ? '🔓 HTTP FORÇADO (Solução 3)' : (isGitHub ? '🔒 HTTPS GitHub' : '🔓 HTTP Localhost')
 });
 console.log('💾 Estado do localStorage:', {
   hasStoredUser: !!localStorage.getItem('wi_user'),
@@ -80,7 +85,230 @@ async function tryConnection(url, options = {}) {
   }
 }
 
-// Elementos DOM
+// === FUNÇÕES AUXILIARES GLOBAIS ===
+
+function setStatus(msg, type = '') {
+  const statusEl = document.getElementById('status');
+  if (!statusEl) return;
+  statusEl.textContent = msg || '';
+  statusEl.className = 'status';
+  if (type) statusEl.classList.add(type);
+}
+
+function setLoading(loading, button) {
+  if (!button) {
+    button = document.getElementById('loginBtn');
+  }
+  if (!button) return;
+  button.disabled = loading;
+  const originalText = button.dataset.originalText || button.textContent;
+  button.dataset.originalText = originalText;
+  button.textContent = loading ? 'Aguarde...' : originalText;
+}
+
+// === FUNÇÃO DE TESTE DE CONECTIVIDADE (GLOBAL) ===
+
+async function testConnectivity() {
+  const testBtn = document.getElementById('testConnectionBtn');
+  if (!testBtn) return;
+  
+  const originalText = testBtn.textContent;
+  setLoading(true, testBtn);
+  testBtn.textContent = '🧪 Testando...';
+  
+  console.log('🧪 === TESTE DE CONECTIVIDADE DETALHADO ===');
+  console.log('🌍 Configuração completa:', { 
+    hostname: location.hostname,
+    protocol: location.protocol,
+    port: location.port,
+    origin: location.origin,
+    isGitHub, 
+    isLocalhost, 
+    isLocalHttpServer,
+    API_URL, 
+    WHATSAPP_URL 
+  });
+  
+  try {
+    setStatus('🔍 Testando conectividade com servidores...', 'info');
+    
+    // Teste 1: Servidor Auth
+    console.log('🔧 === TESTE 1: SERVIDOR AUTH ===');
+    console.log('🎯 URL de teste:', API_URL.replace('/api', ''));
+    console.log('🔍 URLs detectadas:', {
+      'API_URL base': API_URL,
+      'Auth URL (sem /api)': API_URL.replace('/api', ''),
+      'WHATSAPP_URL': WHATSAPP_URL,
+      'isLocalHttpServer': isLocalHttpServer,
+      'Protocolo esperado': isLocalHttpServer ? 'HTTP' : 'conforme ambiente'
+    });
+    
+    try {
+      const authTestStart = performance.now();
+      const authTest = await fetch(API_URL.replace('/api', ''), {
+        method: 'GET',
+        mode: 'cors'
+      });
+      const authTestTime = performance.now() - authTestStart;
+      
+      console.log('✅ Auth Server - Resposta recebida:', {
+        status: authTest.status,
+        statusText: authTest.statusText,
+        ok: authTest.ok,
+        type: authTest.type,
+        url: authTest.url,
+        headers: [...authTest.headers.entries()],
+        responseTime: `${authTestTime.toFixed(2)}ms`
+      });
+      
+      let authData = {};
+      try {
+        const authResponseText = await authTest.text();
+        console.log('📄 Auth Response (texto):', authResponseText);
+        authData = authResponseText ? JSON.parse(authResponseText) : {};
+        console.log('📋 Auth Response (parseado):', authData);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear resposta do Auth Server:', parseError);
+      }
+      
+      if (authTest.ok) {
+        console.log('✅ Auth Server: SUCESSO');
+        setStatus('✅ Auth Server OK', 'success');
+      } else {
+        console.error('❌ Auth Server retornou erro:', authTest.status);
+        throw new Error(`Auth Server HTTP ${authTest.status}: ${authTest.statusText}`);
+      }
+      
+    } catch (authError) {
+      console.error('❌ Auth Server - Erro detalhado:', {
+        name: authError.name,
+        message: authError.message,
+        stack: authError.stack,
+        cause: authError.cause
+      });
+      
+      if (authError.name === 'TypeError') {
+        console.error('🔍 TypeError no Auth Server - Diagnóstico:');
+        if (authError.message.includes('Failed to fetch')) {
+          console.error('   • Failed to fetch - Servidor provavelmente não está acessível');
+          console.error('   • Verifique se o servidor auth está rodando na porta 8766');
+          console.error('   • Verifique se o certificado HTTPS foi aceito');
+        } else if (authError.message.includes('NetworkError')) {
+          console.error('   • Network Error - Problema de conectividade ou CORS');
+        }
+      }
+      
+      setStatus(`❌ Auth Server Error: ${authError.message}`, 'error');
+      throw authError;
+    }
+    
+    // Teste 2: Health endpoint
+    console.log('🔧 === TESTE 2: HEALTH ENDPOINT ===');
+    console.log('🎯 URL de teste:', `${API_URL}/health`);
+    
+    try {
+      const healthTestStart = performance.now();
+      const healthTest = await fetch(`${API_URL}/health`, {
+        method: 'GET',
+        mode: 'cors'
+      });
+      const healthTestTime = performance.now() - healthTestStart;
+      
+      console.log('✅ Health endpoint - Resposta recebida:', {
+        status: healthTest.status,
+        statusText: healthTest.statusText,
+        ok: healthTest.ok,
+        type: healthTest.type,
+        url: healthTest.url,
+        headers: [...healthTest.headers.entries()],
+        responseTime: `${healthTestTime.toFixed(2)}ms`
+      });
+      
+      let healthData = {};
+      try {
+        const healthResponseText = await healthTest.text();
+        console.log('📄 Health Response (texto):', healthResponseText);
+        healthData = healthResponseText ? JSON.parse(healthResponseText) : {};
+        console.log('📋 Health Response (parseado):', healthData);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear resposta do Health endpoint:', parseError);
+      }
+      
+      if (healthTest.ok) {
+        console.log('✅ Health endpoint: SUCESSO');
+        setStatus('✅ Todos os testes OK! Você pode tentar fazer login agora.', 'success');
+        
+        // Se estamos no GitHub Pages, marcar como autorizado
+        if (isGitHub) {
+          localStorage.setItem('servers_authorized', 'true');
+          console.log('✅ Servidores marcados como autorizados no localStorage');
+        }
+      } else {
+        console.error('❌ Health endpoint retornou erro:', healthTest.status);
+        throw new Error(`Health endpoint HTTP ${healthTest.status}: ${healthTest.statusText}`);
+      }
+      
+    } catch (healthError) {
+      console.error('❌ Health endpoint - Erro detalhado:', {
+        name: healthError.name,
+        message: healthError.message,
+        stack: healthError.stack,
+        cause: healthError.cause
+      });
+      
+      if (healthError.name === 'TypeError') {
+        console.error('🔍 TypeError no Health endpoint - Diagnóstico:');
+        if (healthError.message.includes('Failed to fetch')) {
+          console.error('   • Failed to fetch - API não está acessível');
+          console.error('   • Verifique se a rota /api/health existe');
+          console.error('   • Verifique se o middleware CORS está funcionando');
+        }
+      }
+      
+      setStatus(`❌ Health endpoint Error: ${healthError.message}`, 'error');
+      throw healthError;
+    }
+    
+    console.log('🎉 === TODOS OS TESTES CONCLUÍDOS COM SUCESSO ===');
+    
+  } catch (error) {
+    console.error('❌ === TESTE DE CONECTIVIDADE FALHOU ===');
+    console.error('🔍 Erro geral:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
+    
+    if (isGitHub) {
+      console.error('🔒 GitHub Pages - Problema de Mixed Content detectado');
+      console.error('💡 Soluções possíveis:');
+      console.error('   1. Executar o script iniciar-portatil-funcional.bat');
+      console.error('   2. Acessar https://127.0.0.1:8766 e aceitar o certificado');
+      console.error('   3. Usar o setup.html para configurar os certificados');
+      
+      setStatus('❌ Mixed Content detectado! Redirecionando para setup...', 'error');
+      localStorage.removeItem('servers_authorized');
+      setTimeout(() => {
+        window.location.href = './setup.html';
+      }, 2000);
+    } else {
+      console.error('💻 Execução local - Servidor não está acessível');
+      console.error('💡 Soluções possíveis:');
+      console.error('   1. Verificar se o script iniciar-portatil-funcional.bat foi executado');
+      console.error('   2. Verificar se as portas 8765/8766 estão livres');
+      console.error('   3. Verificar se o Node.js está funcionando');
+      
+      setStatus('❌ Servidores não estão acessíveis. Verifique se estão rodando.', 'error');
+    }
+  } finally {
+    setLoading(false, testBtn);
+    testBtn.textContent = originalText;
+    console.log('🧪 === FIM DOS TESTES DE CONECTIVIDADE ===');
+  }
+}
+
+// === ELEMENTOS DOM ===
 const loginScreen = document.getElementById('loginScreen');
 const whatsappScreen = document.getElementById('whatsappScreen');
 const qrScreen = document.getElementById('qrScreen');
@@ -745,21 +973,6 @@ function initializeEmojiPicker() {
 
   // === UTILITY FUNCTIONS ===
   
-  function setStatus(msg, type = '') {
-    if (!statusEl) return;
-    statusEl.textContent = msg || '';
-    statusEl.className = 'status';
-    if (type) statusEl.classList.add(type);
-  }
-
-  function setLoading(loading, button = loginBtn) {
-    if (!button) return;
-    button.disabled = loading;
-    const originalText = button.dataset.originalText || button.textContent;
-    button.dataset.originalText = originalText;
-    button.textContent = loading ? 'Aguarde...' : originalText;
-  }
-
   function showMixedContentWarning() {
     if (isGitHubPages) {
       const warningMsg = document.createElement('div');
@@ -1121,198 +1334,7 @@ function initializeEmojiPicker() {
       }
     }
   }
-  
-  async function testConnectivity() {
-    const testBtn = document.getElementById('testConnectionBtn');
-    if (!testBtn) return;
-    
-    const originalText = testBtn.textContent;
-    setLoading(true, testBtn);
-    testBtn.textContent = '🧪 Testando...';
-    
-    console.log('🧪 === TESTE DE CONECTIVIDADE DETALHADO ===');
-    console.log('🌍 Configuração completa:', { 
-      hostname: location.hostname,
-      protocol: location.protocol,
-      port: location.port,
-      origin: location.origin,
-      isGitHub, 
-      isLocalhost, 
-      API_URL, 
-      WHATSAPP_URL 
-    });
-    
-    try {
-      setStatus('🔍 Testando conectividade com servidores...', 'info');
-      
-      // Teste 1: Servidor Auth
-      console.log('🔧 === TESTE 1: SERVIDOR AUTH ===');
-      console.log('🎯 URL de teste:', API_URL.replace('/api', ''));
-      
-      try {
-        const authTestStart = performance.now();
-        const authTest = await fetch(API_URL.replace('/api', ''), {
-          method: 'GET',
-          mode: 'cors'
-        });
-        const authTestTime = performance.now() - authTestStart;
-        
-        console.log('✅ Auth Server - Resposta recebida:', {
-          status: authTest.status,
-          statusText: authTest.statusText,
-          ok: authTest.ok,
-          type: authTest.type,
-          url: authTest.url,
-          headers: [...authTest.headers.entries()],
-          responseTime: `${authTestTime.toFixed(2)}ms`
-        });
-        
-        let authData = {};
-        try {
-          const authResponseText = await authTest.text();
-          console.log('📄 Auth Response (texto):', authResponseText);
-          authData = authResponseText ? JSON.parse(authResponseText) : {};
-          console.log('📋 Auth Response (parseado):', authData);
-        } catch (parseError) {
-          console.error('❌ Erro ao parsear resposta do Auth Server:', parseError);
-        }
-        
-        if (authTest.ok) {
-          console.log('✅ Auth Server: SUCESSO');
-          setStatus('✅ Auth Server OK', 'success');
-        } else {
-          console.error('❌ Auth Server retornou erro:', authTest.status);
-          throw new Error(`Auth Server HTTP ${authTest.status}: ${authTest.statusText}`);
-        }
-        
-      } catch (authError) {
-        console.error('❌ Auth Server - Erro detalhado:', {
-          name: authError.name,
-          message: authError.message,
-          stack: authError.stack,
-          cause: authError.cause
-        });
-        
-        if (authError.name === 'TypeError') {
-          console.error('🔍 TypeError no Auth Server - Diagnóstico:');
-          if (authError.message.includes('Failed to fetch')) {
-            console.error('   • Failed to fetch - Servidor provavelmente não está acessível');
-            console.error('   • Verifique se o servidor auth está rodando na porta 8766');
-            console.error('   • Verifique se o certificado HTTPS foi aceito');
-          } else if (authError.message.includes('NetworkError')) {
-            console.error('   • Network Error - Problema de conectividade ou CORS');
-          }
-        }
-        
-        setStatus(`❌ Auth Server Error: ${authError.message}`, 'error');
-        throw authError;
-      }
-      
-      // Teste 2: Health endpoint
-      console.log('🔧 === TESTE 2: HEALTH ENDPOINT ===');
-      console.log('🎯 URL de teste:', `${API_URL}/health`);
-      
-      try {
-        const healthTestStart = performance.now();
-        const healthTest = await fetch(`${API_URL}/health`, {
-          method: 'GET',
-          mode: 'cors'
-        });
-        const healthTestTime = performance.now() - healthTestStart;
-        
-        console.log('✅ Health endpoint - Resposta recebida:', {
-          status: healthTest.status,
-          statusText: healthTest.statusText,
-          ok: healthTest.ok,
-          type: healthTest.type,
-          url: healthTest.url,
-          headers: [...healthTest.headers.entries()],
-          responseTime: `${healthTestTime.toFixed(2)}ms`
-        });
-        
-        let healthData = {};
-        try {
-          const healthResponseText = await healthTest.text();
-          console.log('📄 Health Response (texto):', healthResponseText);
-          healthData = healthResponseText ? JSON.parse(healthResponseText) : {};
-          console.log('📋 Health Response (parseado):', healthData);
-        } catch (parseError) {
-          console.error('❌ Erro ao parsear resposta do Health endpoint:', parseError);
-        }
-        
-        if (healthTest.ok) {
-          console.log('✅ Health endpoint: SUCESSO');
-          setStatus('✅ Todos os testes OK! Você pode tentar fazer login agora.', 'success');
-          
-          // Se estamos no GitHub Pages, marcar como autorizado
-          if (isGitHub) {
-            localStorage.setItem('servers_authorized', 'true');
-            console.log('✅ Servidores marcados como autorizados no localStorage');
-          }
-        } else {
-          console.error('❌ Health endpoint retornou erro:', healthTest.status);
-          throw new Error(`Health endpoint HTTP ${healthTest.status}: ${healthTest.statusText}`);
-        }
-        
-      } catch (healthError) {
-        console.error('❌ Health endpoint - Erro detalhado:', {
-          name: healthError.name,
-          message: healthError.message,
-          stack: healthError.stack,
-          cause: healthError.cause
-        });
-        
-        if (healthError.name === 'TypeError') {
-          console.error('🔍 TypeError no Health endpoint - Diagnóstico:');
-          if (healthError.message.includes('Failed to fetch')) {
-            console.error('   • Failed to fetch - API não está acessível');
-            console.error('   • Verifique se a rota /api/health existe');
-            console.error('   • Verifique se o middleware CORS está funcionando');
-          }
-        }
-        
-        setStatus(`❌ Health endpoint Error: ${healthError.message}`, 'error');
-        throw healthError;
-      }
-      
-      console.log('🎉 === TODOS OS TESTES CONCLUÍDOS COM SUCESSO ===');
-      
-    } catch (error) {
-      console.error('❌ === TESTE DE CONECTIVIDADE FALHOU ===');
-      console.error('🔍 Erro geral:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        cause: error.cause
-      });
-      
-      if (isGitHub) {
-        console.error('🔒 GitHub Pages - Problema de Mixed Content detectado');
-        console.error('💡 Soluções possíveis:');
-        console.error('   1. Executar o script iniciar-portatil-funcional.bat');
-        console.error('   2. Acessar https://127.0.0.1:8766 e aceitar o certificado');
-        console.error('   3. Usar o setup.html para configurar os certificados');
-        
-        setStatus('❌ Mixed Content detectado! Redirecionando para setup...', 'error');
-        localStorage.removeItem('servers_authorized');
-        setTimeout(() => {
-          window.location.href = './setup.html';
-        }, 2000);
-      } else {
-        console.error('💻 Execução local - Servidor não está acessível');
-        console.error('💡 Soluções possíveis:');
-        console.error('   1. Verificar se o script iniciar-portatil-funcional.bat foi executado');
-        console.error('   2. Verificar se as portas 8765/8766 estão livres');
-        console.error('   3. Verificar se o Node.js está funcionando');
-        
-        setStatus('❌ Servidores não estão acessíveis. Verifique se estão rodando.', 'error');
-      }
-    } finally {
-      setLoading(false, testBtn);
-      testBtn.textContent = originalText;
-      console.log('🧪 === FIM DOS TESTES DE CONECTIVIDADE ===');
-    }
-  }
+}
 
   function logout() {
     localStorage.removeItem('wi_user');
@@ -2518,4 +2540,3 @@ document.addEventListener('visibilitychange', () => {
 });
 
 console.log('✅ Script WhatIntegra carregado com sucesso');
-}
