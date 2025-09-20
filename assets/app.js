@@ -394,17 +394,25 @@
     
     try {
       setLoading(true, restartBtn);
-      const res = await fetch(`${API_URL}/whatsapp/restart`, {
+      console.log('🔄 Reiniciando WhatsApp via:', `${WHATSAPP_URL}/api/whatsapp/restart`);
+      
+      const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/restart`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       
       if (res.ok) {
+        const data = await res.json();
+        console.log('✅ WhatsApp restart solicitado:', data);
         updateConnectionStatus('connecting', 'Reiniciando...');
         showQRScreen();
+      } else {
+        console.error('❌ Erro ao reiniciar WhatsApp:', res.status, res.statusText);
+        updateConnectionStatus('disconnected', 'Erro ao reiniciar');
       }
     } catch (error) {
-      console.error('Erro ao reiniciar WhatsApp:', error);
+      console.error('❌ Erro ao reiniciar WhatsApp:', error);
+      updateConnectionStatus('disconnected', 'Erro de conexão');
     } finally {
       setLoading(false, restartBtn);
     }
@@ -479,7 +487,7 @@
         </div>
       `;
 
-      const res = await fetch(`${API_URL}/whatsapp/chat/${encodeURIComponent(chatId)}/messages?limit=50`, {
+      const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/chat/${encodeURIComponent(chatId)}/messages?limit=50`, {
         headers: { 'Authorization': `Bearer ${currentToken}` }
       });
 
@@ -568,7 +576,7 @@
     try {
       setLoading(true, sendBtn);
       
-      const res = await fetch(`${API_URL}/whatsapp/send`, {
+      const res = await fetch(`${WHATSAPP_URL}/api/whatsapp/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
