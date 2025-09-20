@@ -339,7 +339,7 @@
     });
 
     socket.on('whatsapp:message', (message) => {
-      console.log('📨 Nova mensagem:', message);
+      console.log('📨 Mensagem recebida via whatsapp:message:', message);
       handleNewMessage(message);
     });
 
@@ -351,7 +351,7 @@
     
     // Novos handlers para sincronização aprimorada
     socket.on('message:new', (message) => {
-      console.log('📨 Nova mensagem sincronizada:', message);
+      console.log('📨 Mensagem recebida via message:new:', message);
       handleNewMessage(message);
     });
     
@@ -650,6 +650,8 @@
   function renderMessages(chatId) {
     const chatMessages = messages[chatId] || [];
     
+    console.log(`🎨 Renderizando ${chatMessages.length} mensagens para chat: ${chatId}`);
+    
     if (chatMessages.length === 0) {
       messagesArea.innerHTML = `
         <div class="loading-messages">
@@ -658,6 +660,11 @@
       `;
       return;
     }
+
+    // Debug: mostrar todas as mensagens que serão renderizadas
+    chatMessages.forEach((msg, index) => {
+      console.log(`📝 Mensagem ${index + 1}: ${msg.fromMe ? 'ENVIADA' : 'RECEBIDA'} - "${msg.body}" - ${new Date(msg.timestamp).toLocaleTimeString()}`);
+    });
 
     messagesArea.innerHTML = chatMessages.map(msg => `
       <div class="message ${msg.fromMe ? 'from-me' : 'from-other'}">
@@ -677,6 +684,8 @@
       });
     }, 100);
     
+    console.log('✅ Mensagens renderizadas e scroll ajustado');
+    
     // Mark chat as read (reset unread count)
     const chat = chats.find(c => c.id === chatId);
     if (chat && chat.unreadCount > 0) {
@@ -687,12 +696,14 @@
 
   function handleNewMessage(message) {
     console.log('📨 Processando nova mensagem:', message);
+    console.log('📨 ChatId:', message.chatId, 'FromMe:', message.fromMe, 'Body:', message.body);
+    
     const chatId = message.chatId;
     
     // Verificar se é uma mensagem duplicada
     if (messages[chatId]) {
       const isDuplicate = messages[chatId].some(msg => 
-        msg.timestamp === message.timestamp && msg.body === message.body
+        msg.timestamp === message.timestamp && msg.body === message.body && msg.fromMe === message.fromMe
       );
       if (isDuplicate) {
         console.log('⚠️ Mensagem duplicada ignorada');
@@ -703,6 +714,7 @@
     // Initialize messages array if not exists
     if (!messages[chatId]) {
       messages[chatId] = [];
+      console.log('📝 Inicializando array de mensagens para chat:', chatId);
     }
     
     // Add message in chronological order
@@ -712,19 +724,26 @@
     } else {
       messages[chatId].splice(insertIndex, 0, message);
     }
+    
+    console.log(`📝 Total de mensagens no chat ${chatId}:`, messages[chatId].length);
 
     // If current chat, update view with smooth scroll
     if (currentChat && currentChat.id === chatId) {
+      console.log('🔄 Atualizando chat ativo:', chatId);
       renderMessages(chatId);
       
       // Notificação visual se não for mensagem própria
       if (!message.fromMe) {
-        console.log('💬 Nova mensagem no chat ativo');
+        console.log('💬 Nova mensagem RECEBIDA no chat ativo');
+      } else {
+        console.log('💬 Nova mensagem ENVIADA no chat ativo');
       }
     } else {
       // Notificação para chat não ativo
       if (!message.fromMe) {
-        console.log(`💬 Nova mensagem de: ${getContactName(chatId)}`);
+        console.log(`💬 Nova mensagem RECEBIDA de: ${getContactName(chatId)}`);
+      } else {
+        console.log(`💬 Nova mensagem ENVIADA para: ${getContactName(chatId)}`);
       }
     }
 
