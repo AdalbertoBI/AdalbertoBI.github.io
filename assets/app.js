@@ -871,6 +871,7 @@ function initializeEmojiPicker() {
   async function login(username, password) {
     try {
       console.log('🔐 Tentando login...', { username, API_URL });
+      console.log('🌍 Configuração atual:', { hostname, isGitHub, isLocalhost, API_URL, WHATSAPP_URL });
       
       // Verificar se estamos no GitHub Pages tentando acessar HTTPS local
       if (isGitHub) {
@@ -886,12 +887,33 @@ function initializeEmojiPicker() {
           }, 1500);
           return;
         } else {
-          console.log('✅ Servidores HTTPS já foram autorizados');
+          console.log('✅ Servidores HTTPS já foram autorizados pelo setup');
           setStatus('🔒 Conectando via HTTPS seguro...', 'info');
+          
+          // Testar conectividade antes do login
+          console.log('🧪 Testando conectividade com servidor auth...');
+          try {
+            const testResponse = await fetch(API_URL.replace('/api', ''), {
+              method: 'GET',
+              mode: 'cors'
+            });
+            console.log('✅ Teste de conectividade OK:', testResponse.status);
+          } catch (testError) {
+            console.error('❌ Teste de conectividade falhou:', testError);
+            setStatus('❌ Não foi possível conectar ao servidor HTTPS. Verifique se os servidores estão rodando e foram autorizados no setup.html', 'error');
+            
+            // Remover autorização e redirecionar para setup
+            localStorage.removeItem('servers_authorized');
+            setTimeout(() => {
+              window.location.href = './setup.html';
+            }, 3000);
+            return;
+          }
         }
       }
       
       setStatus('Conectando ao servidor...', 'info');
+      console.log('📡 Enviando requisição POST para:', `${API_URL}/login`);
       
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
@@ -948,6 +970,83 @@ function initializeEmojiPicker() {
       } else {
         setStatus(err.message || 'Erro ao autenticar', 'error');
       }
+    }
+  }
+  
+  async function testConnectivity() {
+    const testBtn = document.getElementById('testConnectionBtn');
+    if (!testBtn) return;
+    
+    const originalText = testBtn.textContent;
+    setLoading(true, testBtn);
+    testBtn.textContent = '🧪 Testando...';
+    
+    console.log('🧪 === TESTE DE CONECTIVIDADE ===');
+    console.log('🌍 Configuração:', { hostname, isGitHub, isLocalhost, API_URL, WHATSAPP_URL });
+    
+    try {
+      setStatus('🔍 Testando conectividade com servidores...', 'info');
+      
+      // Teste 1: Servidor Auth
+      console.log('🔧 Testando Auth Server...');
+      try {
+        const authTest = await fetch(API_URL.replace('/api', ''), {
+          method: 'GET',
+          mode: 'cors'
+        });
+        console.log('✅ Auth Server:', authTest.status, authTest.statusText);
+        
+        const authData = await authTest.json();
+        console.log('📋 Auth Response:', authData);
+        
+        setStatus('✅ Auth Server OK', 'success');
+      } catch (authError) {
+        console.error('❌ Auth Server Error:', authError);
+        setStatus(`❌ Auth Server Error: ${authError.message}`, 'error');
+        throw authError;
+      }
+      
+      // Teste 2: Health endpoint
+      console.log('🔧 Testando Health endpoint...');
+      try {
+        const healthTest = await fetch(`${API_URL}/health`, {
+          method: 'GET',
+          mode: 'cors'
+        });
+        console.log('✅ Health endpoint:', healthTest.status, healthTest.statusText);
+        
+        const healthData = await healthTest.json();
+        console.log('📋 Health Response:', healthData);
+        
+        setStatus('✅ Todos os testes OK! Você pode tentar fazer login agora.', 'success');
+        
+        // Se estamos no GitHub Pages, marcar como autorizado
+        if (isGitHub) {
+          localStorage.setItem('servers_authorized', 'true');
+          console.log('✅ Servidores marcados como autorizados');
+        }
+        
+      } catch (healthError) {
+        console.error('❌ Health endpoint Error:', healthError);
+        setStatus(`❌ Health endpoint Error: ${healthError.message}`, 'error');
+        throw healthError;
+      }
+      
+    } catch (error) {
+      console.error('❌ Teste de conectividade falhou:', error);
+      
+      if (isGitHub) {
+        setStatus('❌ Mixed Content detectado! Redirecionando para setup...', 'error');
+        localStorage.removeItem('servers_authorized');
+        setTimeout(() => {
+          window.location.href = './setup.html';
+        }, 2000);
+      } else {
+        setStatus('❌ Servidores não estão acessíveis. Verifique se estão rodando.', 'error');
+      }
+    } finally {
+      setLoading(false, testBtn);
+      testBtn.textContent = originalText;
     }
   }
 
@@ -1827,6 +1926,11 @@ function initializeEmojiPicker() {
 
   // WhatsApp controls
   logoutBtn?.addEventListener('click', logout);
+  
+  // Test connection button
+  document.getElementById('testConnectionBtn')?.addEventListener('click', async () => {
+    await testConnectivity();
+  });
 
   // Message input
   messageInput?.addEventListener('keypress', (e) => {
