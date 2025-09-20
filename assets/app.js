@@ -288,6 +288,10 @@
     // Se há QR code, mostrar independentemente do status
     if (qr) {
       console.log('📱 QR Code detectado, exibindo...');
+      // Garantir que estamos na interface do WhatsApp primeiro
+      if (whatsappScreen && whatsappScreen.classList.contains('hidden')) {
+        showWhatsAppInterface();
+      }
       showQRCode(qr);
       showQRScreen();
     }
@@ -304,22 +308,35 @@
         
       case 'qr':
         updateConnectionStatus('connecting', 'Aguardando QR Code...');
+        if (!whatsappScreen || whatsappScreen.classList.contains('hidden')) {
+          showWhatsAppInterface();
+        }
         if (qr) showQRCode(qr);
         showQRScreen();
         break;
         
       case 'disconnected':
         updateConnectionStatus('disconnected', 'Desconectado');
+        if (!whatsappScreen || whatsappScreen.classList.contains('hidden')) {
+          showWhatsAppInterface();
+        }
         showQRScreen();
         break;
         
       case 'auth_failure':
         updateConnectionStatus('disconnected', 'Erro de autenticação');
+        if (!whatsappScreen || whatsappScreen.classList.contains('hidden')) {
+          showWhatsAppInterface();
+        }
         showQRScreen();
         break;
         
       case 'failed':
         updateConnectionStatus('disconnected', 'WhatsApp falhou - QR Code disponível');
+        // Garantir que estamos na interface do WhatsApp
+        if (!whatsappScreen || whatsappScreen.classList.contains('hidden')) {
+          showWhatsAppInterface();
+        }
         // Se há QR, mostrar mesmo com falha
         if (qr) {
           showQRCode(qr);
@@ -331,6 +348,9 @@
         updateConnectionStatus('connecting', 'Inicializando...');
         // Verificar se há QR mesmo em status desconhecido
         if (qr) {
+          if (!whatsappScreen || whatsappScreen.classList.contains('hidden')) {
+            showWhatsAppInterface();
+          }
           showQRCode(qr);
           showQRScreen();
         }
@@ -615,10 +635,25 @@
       return;
     }
     
+    // Garantir que a tela do WhatsApp esteja visível primeiro
+    if (whatsappScreen && whatsappScreen.classList.contains('hidden')) {
+      console.log('📱 Removendo hidden do whatsappScreen');
+      whatsappScreen.classList.remove('hidden');
+    }
+    
+    // Ocultar tela de login se estiver visível
+    if (loginScreen && !loginScreen.classList.contains('hidden')) {
+      console.log('🔒 Ocultando tela de login');
+      loginScreen.classList.add('hidden');
+    }
+    
     qrScreen.classList.remove('hidden');
     mainInterface.classList.add('hidden');
     
     console.log('✅ Tela QR visível, interface principal oculta');
+    console.log('🔍 Classes QR screen:', qrScreen.className);
+    console.log('🔍 Classes main interface:', mainInterface.className);
+    console.log('🔍 Classes whatsapp screen:', whatsappScreen?.className);
   }
 
   function showMainInterface() {
