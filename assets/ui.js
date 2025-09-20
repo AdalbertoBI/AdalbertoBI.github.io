@@ -36,9 +36,19 @@ function showWhatsAppInterface() {
     displayUser.textContent = window.WhatIntegra.state.currentUser;
   }
   
+  // Mostrar tela QR inicialmente enquanto conecta
+  showQRScreen();
+  
   // Conectar WebSocket se ainda não estiver conectado
   if (window.WhatIntegra.whatsapp && window.WhatIntegra.whatsapp.connectWebSocket) {
     window.WhatIntegra.whatsapp.connectWebSocket();
+  } else {
+    console.log('⚠️ Módulo WhatsApp não carregado ainda, mostrando QR screen');
+    // Por enquanto, simular conexão do QR após alguns segundos
+    setTimeout(() => {
+      console.log('🔄 Simulando transição QR -> Interface principal');
+      showMainInterface();
+    }, 3000);
   }
 }
 
