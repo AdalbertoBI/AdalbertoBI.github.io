@@ -10,8 +10,8 @@ Atenção: Em produção na internet, autenticar via servidor local não funcion
 ## Como usar
 
 1. Inicie o servidor local (veja README em `../local-auth-server`).
-2. Publique o site no repositório `AdalbertoBI.github.io` (script `publish-site.ps1` na raiz do workspace).
-3. Abra `https://AdalbertoBI.github.io` e faça login.
+2. Publique o site no repositório `AdalbertoBI/AdalbertoBI.whatintegra` (script `publish-site.ps1` na raiz do workspace).
+3. Abra `https://github.com/AdalbertoBI/AdalbertoBI.whatintegra` e faça login.
 
 ## Segurança
 

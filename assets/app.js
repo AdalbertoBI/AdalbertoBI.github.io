@@ -1,10 +1,20 @@
 // WhatIntegra - WhatsApp Web Integration
 // Configurações
-const isGitHubPages = location.hostname.includes('github.io');
+const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
+const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 // URLs baseadas no ambiente
-const API_URL = isGitHubPages ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
-const WHATSAPP_URL = isGitHubPages ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
+const API_URL = isLocalhost ? 'http://127.0.0.1:8765/api' : 'https://127.0.0.1:8765/api';
+const WHATSAPP_URL = isLocalhost ? 'http://127.0.0.1:3001' : 'https://127.0.0.1:3001';
+
+// Debug da configuração
+console.log('🔧 WhatIntegra - Configuração:', {
+  hostname: location.hostname,
+  isGitHub,
+  isLocalhost,
+  API_URL,
+  WHATSAPP_URL
+});
 
 // Estado da aplicação
 let socket = null;
@@ -815,25 +825,37 @@ function initializeEmojiPicker() {
     const user = localStorage.getItem('wi_user');
     const token = localStorage.getItem('wi_token');
     
-    if (!user || !token) return false;
+    if (!user || !token) {
+      console.log('🔍 Nenhuma sessão armazenada encontrada');
+      return false;
+    }
     
     try {
+      console.log('🔄 Verificando sessão armazenada para:', user);
+      console.log('🔗 Testando conexão com:', API_URL);
+      
       const res = await fetch(`${API_URL}/session`, {
         headers: { 'Authorization': `Bearer ${token}` },
+        mode: 'cors'
       });
+      
+      console.log('📡 Resposta da verificação de sessão:', res.status);
       
       if (res.ok) {
         currentUser = user;
         currentToken = token;
+        console.log('✅ Sessão válida restaurada para:', user);
         showWhatsAppInterface();
         return true;
       } else {
+        console.log('❌ Sessão inválida, removendo dados armazenados');
         localStorage.removeItem('wi_user');
         localStorage.removeItem('wi_token');
         return false;
       }
     } catch (error) {
-      console.log('Servidor não acessível:', error);
+      console.error('❌ Erro ao verificar sessão:', error);
+      console.log('⚠️ Servidor não acessível, exibindo alerta de configuração');
       showConfigAlert();
       return false;
     }
@@ -841,30 +863,51 @@ function initializeEmojiPicker() {
 
   async function login(username, password) {
     try {
+      console.log('🔐 Tentando login...', { username, API_URL });
+      setStatus('Conectando ao servidor...', 'info');
+      
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
+        mode: 'cors'
       });
+
+      console.log('📡 Resposta do servidor:', res.status, res.statusText);
 
       const data = await res.json().catch(() => ({}));
       
       if (!res.ok) {
-        throw new Error(data?.error || 'Falha no login');
+        console.error('❌ Erro no login:', data);
+        throw new Error(data?.error || `Erro ${res.status}: ${res.statusText}`);
       }
 
       const { token } = data;
+      if (!token) {
+        throw new Error('Token não recebido do servidor');
+      }
+
       localStorage.setItem('wi_user', username);
       localStorage.setItem('wi_token', token);
       
       currentUser = username;
       currentToken = token;
       
+      console.log('✅ Login bem-sucedido para:', username);
       setStatus('Autenticado com sucesso!', 'success');
       setTimeout(() => showWhatsAppInterface(), 500);
       
     } catch (err) {
-      throw new Error(err.message || 'Erro ao autenticar');
+      console.error('❌ Erro no login:', err);
+      
+      // Tratar diferentes tipos de erro
+      if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+        throw new Error('Servidor não acessível. Verifique se o servidor de autenticação está rodando em ' + API_URL.replace('/api', ''));
+      } else if (err.name === 'TypeError' && err.message.includes('NetworkError')) {
+        throw new Error('Erro de rede. Verifique sua conexão e se o servidor está ativo.');
+      } else {
+        throw new Error(err.message || 'Erro ao autenticar');
+      }
     }
   }
 
@@ -1706,22 +1749,33 @@ function initializeEmojiPicker() {
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    console.log('📝 Formulário de login submetido');
+    
     if (showMixedContentWarning()) {
+      console.log('⚠️ Mixed content warning mostrado');
       setLoading(false);
       return;
     }
     
-    setStatus('Validando credenciais…');
+    const username = document.getElementById('username')?.value?.trim();
+    const password = document.getElementById('password')?.value;
+    
+    if (!username || !password) {
+      setStatus('Preencha todos os campos', 'error');
+      return;
+    }
+    
+    setStatus('Validando credenciais…', 'info');
     setLoading(true);
     
     try {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-      
       await login(username, password);
     } catch (err) {
+      console.error('❌ Erro no formulário de login:', err);
       const errorMsg = err.message || 'Erro ao autenticar';
-      if (errorMsg.includes('fetch') || errorMsg.includes('NetworkError') || err.name === 'TypeError') {
+      
+      if (errorMsg.includes('não acessível') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || err.name === 'TypeError') {
+        console.log('🛠️ Exibindo alerta de configuração devido a erro de rede');
         showConfigAlert();
       } else {
         setStatus(errorMsg, 'error');
