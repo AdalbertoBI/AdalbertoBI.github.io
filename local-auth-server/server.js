@@ -36,30 +36,35 @@ const JWT_SECRET = process.env.JWT_SECRET || getJwtSecret();
 
 app.use(express.json());
 
-// Headers adicionais para permitir mixed content
+// Middleware de CORS robusto para permitir origens específicas
 app.use((req, res, next) => {
-  console.log(`📡 ${new Date().toLocaleTimeString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin || 'none'}`);
-  
+  const allowedOrigins = [
+    'https://adalbertobi.github.io', 
+    'http://localhost', 
+    'http://127.0.0.1'
+  ];
   const origin = req.headers.origin;
+
+  console.log(`📡 ${new Date().toLocaleTimeString()} - ${req.method} ${req.url} - Origin: ${origin || 'none'}`);
+
+  if (allowedOrigins.some(allowed => origin?.startsWith(allowed))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    console.log(`✅ Origin ${origin} permitida.`);
+  } else if (origin) {
+    console.log(`❌ Origin ${origin} bloqueada.`);
+  } else {
+    console.log('⚠️ Requisição sem Origin. Permitindo para compatibilidade.');
+    res.header('Access-Control-Allow-Origin', '*'); // Fallback para requisições sem origin (ex: Postman)
+  }
   
-  // Permitir qualquer origin para debug - especialmente GitHub Pages
-  res.header('Access-Control-Allow-Origin', origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'false');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  // Headers específicos para Mixed Content
-  res.header('X-Content-Type-Options', 'nosniff');
-  res.header('X-Frame-Options', 'DENY');
-  res.header('X-XSS-Protection', '1; mode=block');
-  
-  console.log(`🔧 CORS headers set for origin: ${origin}`);
   
   if (req.method === 'OPTIONS') {
-    console.log('✅ Handling OPTIONS preflight request');
-    return res.status(200).end();
+    console.log('✈️  Respondendo à requisição OPTIONS (preflight).');
+    return res.status(204).end();
   }
+
   next();
 });
 
