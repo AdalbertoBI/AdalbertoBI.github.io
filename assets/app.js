@@ -157,6 +157,12 @@
       });
     }
   }
+  
+  function truncateMessage(message, maxLength = 50) {
+    if (!message) return '';
+    if (message.length <= maxLength) return message;
+    return message.substring(0, maxLength) + '...';
+  }
 
   function getAvatarEmoji(name) {
     const emojis = ['👤', '👥', '🤝', '💼', '🏠', '❤️', '🌟', '💬', '📱', '⭐'];
@@ -545,13 +551,20 @@
       return;
     }
 
-    chatsListEl.innerHTML = chats.map(chat => `
+    // Ordenar chats por timestamp da última mensagem (mais recentes primeiro)
+    const sortedChats = [...chats].sort((a, b) => {
+      const timeA = a.lastMessage ? a.lastMessage.timestamp : 0;
+      const timeB = b.lastMessage ? b.lastMessage.timestamp : 0;
+      return timeB - timeA; // Ordem decrescente (mais recente primeiro)
+    });
+
+    chatsListEl.innerHTML = sortedChats.map(chat => `
       <div class="chat-item" data-chat-id="${chat.id}">
         <div class="chat-avatar">${getAvatarEmoji(chat.name)}</div>
         <div class="chat-info">
           <div class="chat-name">${chat.name || getContactName(chat.id)}</div>
           <div class="chat-last-message">
-            ${chat.lastMessage ? (chat.lastMessage.fromMe ? 'Você: ' : '') + chat.lastMessage.body : 'Nenhuma mensagem'}
+            ${chat.lastMessage ? (chat.lastMessage.fromMe ? 'Você: ' : '') + truncateMessage(chat.lastMessage.body) : 'Nenhuma mensagem'}
           </div>
         </div>
         <div class="chat-meta">
@@ -561,10 +574,18 @@
       </div>
     `).join('');
 
-    // Add click handlers
+    // Add click handlers and mark active chat
     chatsListEl.querySelectorAll('.chat-item').forEach(item => {
+      const chatId = item.dataset.chatId;
+      
+      // Mark active chat
+      if (currentChat && currentChat.id === chatId) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+      
       item.addEventListener('click', () => {
-        const chatId = item.dataset.chatId;
         selectChat(chatId);
       });
     });
