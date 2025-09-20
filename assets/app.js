@@ -257,8 +257,16 @@
     });
 
     socket.on('whatsapp:qr', (data) => {
-      console.log('📱 QR Code recebido');
-      showQRCode(data.qr);
+      console.log('📱 QR Code recebido via evento específico');
+      console.log('🔍 QR Data length:', data.qr?.length || 'undefined');
+      
+      if (data.qr) {
+        showQRCode(data.qr);
+        showQRScreen();
+        updateConnectionStatus('connecting', 'QR Code disponível - escaneie com seu celular');
+      } else {
+        console.error('❌ QR Code data está vazio');
+      }
     });
 
     socket.on('whatsapp:message', (message) => {
@@ -274,7 +282,15 @@
   }
 
   function handleWhatsAppStatus(data) {
+    console.log('📱 Processando status WhatsApp:', data);
     const { status, chats: newChats, qr } = data;
+    
+    // Se há QR code, mostrar independentemente do status
+    if (qr) {
+      console.log('📱 QR Code detectado, exibindo...');
+      showQRCode(qr);
+      showQRScreen();
+    }
 
     switch (status) {
       case 'connected':
@@ -302,8 +318,22 @@
         showQRScreen();
         break;
         
+      case 'failed':
+        updateConnectionStatus('disconnected', 'WhatsApp falhou - QR Code disponível');
+        // Se há QR, mostrar mesmo com falha
+        if (qr) {
+          showQRCode(qr);
+          showQRScreen();
+        }
+        break;
+        
       default:
         updateConnectionStatus('connecting', 'Inicializando...');
+        // Verificar se há QR mesmo em status desconhecido
+        if (qr) {
+          showQRCode(qr);
+          showQRScreen();
+        }
     }
   }
 
