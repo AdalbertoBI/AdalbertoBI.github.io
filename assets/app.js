@@ -4,8 +4,8 @@ const isGitHub = location.hostname.includes('github.io') || location.hostname.in
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 // URLs baseadas no ambiente
-// Para GitHub Pages: usar HTTPS na porta 8766 (servidor HTTPS)
-// Para localhost: usar HTTP na porta 8765 (servidor HTTP)
+// Para GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
+// Para localhost: usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
 const API_URL = isGitHub ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
 const WHATSAPP_URL = isGitHub ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
 
@@ -417,7 +417,7 @@ function initializeEmojiPicker() {
     let linkPreviewHtml = '';
     
     // Se temos informações de preview do servidor
-    if (msg.linkPreviews && msg.linkPreviews.length > 0) {
+    if (msg.linkPreviews?.length > 0) {
       linkPreviewHtml = msg.linkPreviews.map(preview => `
         <div class="link-preview">
           ${preview.image ? `<div class="link-preview-image">
@@ -586,7 +586,7 @@ function initializeEmojiPicker() {
   }
 
   function stopVoiceRecording() {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
+    if (mediaRecorder?.state === 'recording') {
       mediaRecorder.stop();
       stopRecordingTimer();
       voiceBtn.classList.remove('recording');
@@ -765,15 +765,9 @@ function initializeEmojiPicker() {
     }
   }
 
-  function hideConfigAlert() {
-    if (configAlert) {
-      configAlert.style.display = 'none';
-    }
-  }
-
   function getContactName(chatId) {
     const chat = chats.find(c => c.id === chatId);
-    if (chat && chat.name) return chat.name;
+    if (chat?.name) return chat.name;
     
     if (chatId.endsWith('@g.us')) {
       return 'Grupo';
@@ -784,29 +778,9 @@ function initializeEmojiPicker() {
   }
   
   function requestChatsUpdate() {
-    if (socket && socket.connected) {
+    if (socket?.connected) {
       socket.emit('get-chats');
       console.log('🔄 Solicitando atualização da lista de chats');
-    }
-  }
-  
-  function formatTimestamp(timestamp) {
-    const date = new Date(timestamp);
-    const now = new Date();
-    
-    if (date.toDateString() === now.toDateString()) {
-      return date.toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
-    } else {
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
     }
   }
   
@@ -1085,8 +1059,8 @@ function initializeEmojiPicker() {
       // Setup periodic sync for message updates
       if (window.messageSyncInterval) clearInterval(window.messageSyncInterval);
       window.messageSyncInterval = setInterval(() => {
-        if (currentChat && socket && socket.connected) {
-          const lastMessage = messages[currentChat.id] && messages[currentChat.id].length > 0 
+        if (currentChat && socket?.connected) {
+          const lastMessage = messages[currentChat.id]?.length > 0
             ? messages[currentChat.id][messages[currentChat.id].length - 1]
             : null;
           
@@ -1100,7 +1074,7 @@ function initializeEmojiPicker() {
       // Setup periodic chat list sync
       if (window.chatSyncInterval) clearInterval(window.chatSyncInterval);
       window.chatSyncInterval = setInterval(() => {
-        if (socket && socket.connected) {
+        if (socket?.connected) {
           socket.emit('get-chats');
         }
       }, 30000); // Sync chat list every 30 seconds
@@ -1231,7 +1205,7 @@ function initializeEmojiPicker() {
     if (qr) {
       console.log('📱 QR Code detectado, exibindo...');
       // Garantir que estamos na interface do WhatsApp primeiro
-      if (whatsappScreen && whatsappScreen.classList.contains('hidden')) {
+      if (whatsappScreen?.classList.contains('hidden')) {
         showWhatsAppInterface();
       }
       showQRCode(qr);
@@ -1353,7 +1327,7 @@ function initializeEmojiPicker() {
         
         if (res.ok) {
           const data = await res.json();
-          if (data.messages && data.messages.length > 0) {
+          if (data.messages?.length > 0) {
             messages[chat.id] = data.messages.reverse(); // Ordem cronológica
             console.log(`✅ ${data.messages.length} mensagens carregadas para ${chat.name || chat.id}`);
           }
@@ -1411,7 +1385,11 @@ function initializeEmojiPicker() {
           <div class="chat-info">
             <div class="chat-name">${chat.name || getContactName(chat.id)}</div>
             <div class="chat-last-message">
-              ${chat.lastMessage ? (chat.lastMessage.fromMe ? 'Você: ' : '') + truncateMessage(chat.lastMessage.body) : 'Nenhuma mensagem'}
+              ${(() => {
+                if (!chat.lastMessage) return 'Nenhuma mensagem';
+                const prefix = chat.lastMessage.fromMe ? 'Você: ' : '';
+                return prefix + truncateMessage(chat.lastMessage.body);
+              })()}
             </div>
           </div>
           <div class="chat-meta">
@@ -1427,7 +1405,7 @@ function initializeEmojiPicker() {
       const chatId = item.dataset.chatId;
       
       // Mark active chat
-      if (currentChat && currentChat.id === chatId) {
+      if (currentChat?.id === chatId) {
         item.classList.add('active');
       } else {
         item.classList.remove('active');
@@ -1604,9 +1582,15 @@ function initializeEmojiPicker() {
           ${messageContent}
           <div class="message-meta">
             <span class="message-time">${formatTime(msg.timestamp)}</span>
-            ${msg.fromMe ? `<span class="message-status ${msg.isRead ? 'message-read' : ''}">
-              <span class="status-icon ${msg.isRead ? 'read' : ''}">${msg.statusIcon || '✓'}</span>
-            </span>` : ''}
+            ${(() => {
+              if (!msg.fromMe) return '';
+              const readClass = msg.isRead ? 'message-read' : '';
+              const statusClass = msg.isRead ? 'read' : '';
+              const statusIcon = msg.statusIcon || '✓';
+              return `<span class="message-status ${readClass}">
+                <span class="status-icon ${statusClass}">${statusIcon}</span>
+              </span>`;
+            })()}
           </div>
         </div>
       `;
@@ -1624,7 +1608,7 @@ function initializeEmojiPicker() {
     
     // Mark chat as read (reset unread count)
     const chat = chats.find(c => c.id === chatId);
-    if (chat && chat.unreadCount > 0) {
+    if (chat?.unreadCount > 0) {
       chat.unreadCount = 0;
       renderChats(); // Update chat list to remove unread indicator
     }
@@ -1664,7 +1648,7 @@ function initializeEmojiPicker() {
     console.log(`📝 Total de mensagens no chat ${chatId}:`, messages[chatId].length);
 
     // If current chat, update view with smooth scroll
-    if (currentChat && currentChat.id === chatId) {
+    if (currentChat?.id === chatId) {
       console.log('🔄 Atualizando chat ativo:', chatId);
       renderMessages(chatId);
       
@@ -1779,7 +1763,7 @@ function initializeEmojiPicker() {
         messageFound = true;
         
         // Se é o chat atual, re-renderizar as mensagens
-        if (currentChat && currentChat.id === chatId) {
+        if (currentChat?.id === chatId) {
           updateMessageStatusInDOM(messageId, statusIcon, isRead);
         }
         break;
@@ -1850,7 +1834,7 @@ function initializeEmojiPicker() {
     }
     
     // Garantir que a tela do WhatsApp esteja visível primeiro
-    if (whatsappScreen && whatsappScreen.classList.contains('hidden')) {
+    if (whatsappScreen?.classList.contains('hidden')) {
       console.log('📱 Removendo hidden do whatsappScreen');
       whatsappScreen.classList.remove('hidden');
     }
