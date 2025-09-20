@@ -1,12 +1,16 @@
 // WhatIntegra - Módulo WhatsApp
 // Gerenciamento da conexão WebSocket e interface do WhatsApp Web
 
-// === ESTADO DO WHATSAPP ===
-let socket = null;
-let currentChat = null;
-let chats = [];
-let messages = {};
-let isConnected = false;
+// === MÓDULO WHATSAPP ENCAPSULADO ===
+(function() {
+  'use strict';
+  
+  // === ESTADO DO WHATSAPP ===
+  let socket = null;
+  let currentChat = null;
+  let chats = [];
+  let messages = {};
+  let isConnected = false;
 
 // === ELEMENTOS DOM ===
 const qrCodeEl = document.getElementById('qrCode');
@@ -496,3 +500,5 @@ window.WhatIntegra.whatsapp = {
 window.selectChat = selectChat;
 
 console.log('✅ Módulo WhatsApp carregado');
+
+})(); // Fecha o IIFE

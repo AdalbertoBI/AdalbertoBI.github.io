@@ -66,12 +66,8 @@ console.log('🕐 Timestamp de inicialização:', new Date().toLocaleString('pt-
 console.log('================================================');
 
 // === ESTADO GLOBAL DA APLICAÇÃO ===
-let socket = null;
 let currentUser = null;
 let currentToken = null;
-let currentChat = null;
-let chats = [];
-let messages = {};
 
 // === EXPORTAR PARA ESCOPO GLOBAL ===
 window.WhatIntegra = {
@@ -83,12 +79,8 @@ window.WhatIntegra = {
     WHATSAPP_URL
   },
   state: {
-    socket,
     currentUser,
-    currentToken,
-    currentChat,
-    chats,
-    messages
+    currentToken
   }
 };
 
