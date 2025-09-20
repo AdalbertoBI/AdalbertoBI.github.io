@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuração do Servidor - WhatIntegra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+      
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+      
+      .header {
+        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+      }
+      
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+      
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1em;
+      }
+      
+      .content {
+        padding: 40px 30px;
+      }
+      
+      .section {
+        margin-bottom: 40px;
+      }
+      
+      .section h2 {
+        color: #128c7e;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .form-group {
+        margin-bottom: 25px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
+      }
+      
+      input, select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+      
+      input:focus, select:focus {
+        outline: none;
+        border-color: #25d366;
+      }
+      
+      .examples {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+      }
+      
+      .examples h3 {
+        color: #128c7e;
+        margin-bottom: 15px;
+      }
+      
+      .example-item {
+        margin-bottom: 10px;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        border-left: 4px solid #25d366;
+      }
+      
+      .example-item strong {
+        color: #128c7e;
+      }
+      
+      .current-config {
+        background: #e8f5e8;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #25d366;
+      }
+      
+      .current-config h3 {
+        color: #128c7e;
+        margin-bottom: 15px;
+      }
+      
+      .config-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-family: monospace;
+      }
+      
+      .btn {
+        background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 0.3s;
+        margin-right: 10px;
+      }
+      
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+      
+      .btn-secondary {
+        background: #6c757d;
+      }
+      
+      .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        font-weight: 500;
+      }
+      
+      .alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 2px solid #ffeaa7;
+      }
+      
+      .alert-success {
+        background: #d1edff;
+        color: #0c5460;
+        border: 2px solid #25d366;
+      }
+      
+      .steps {
+        counter-reset: step-counter;
+      }
+      
+      .step {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        position: relative;
+        padding-left: 60px;
+      }
+      
+      .step::before {
+        counter-increment: step-counter;
+        content: counter(step-counter);
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        width: 30px;
+        height: 30px;
+        background: #25d366;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+      
+      .step h4 {
+        margin-bottom: 10px;
+        color: #128c7e;
+      }
+      
+      code {
+        background: #f1f3f4;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        color: #d63384;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🖥️ Configuração do Servidor</h1>
+        <p>Configure o IP/domínio da máquina que roda os servidores WhatIntegra</p>
+      </div>
+      
+      <div class="content">
+        <!-- Configuração Atual -->
+        <div class="section">
+          <h2>⚙️ Configuração Atual</h2>
+          <div class="current-config">
+            <h3>URLs dos Servidores</h3>
+            <div class="config-item">
+              <span>Servidor Auth (HTTP):</span>
+              <span id="currentAuthHttp">http://127.0.0.1:8765/api</span>
+            </div>
+            <div class="config-item">
+              <span>Servidor Auth (HTTPS):</span>
+              <span id="currentAuthHttps">https://127.0.0.1:8766/api</span>
+            </div>
+            <div class="config-item">
+              <span>Servidor WhatsApp (HTTP):</span>
+              <span id="currentWhatsappHttp">http://127.0.0.1:3001</span>
+            </div>
+            <div class="config-item">
+              <span>Servidor WhatsApp (HTTPS):</span>
+              <span id="currentWhatsappHttps">https://127.0.0.1:3002</span>
+            </div>
+            <div class="config-item">
+              <span>Tipo de Acesso:</span>
+              <span id="accessType">🏠 LOCAL (mesma máquina)</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Formulário de Configuração -->
+        <div class="section">
+          <h2>🔧 Nova Configuração</h2>
+          
+          <div class="form-group">
+            <label for="serverType">Tipo de Uso:</label>
+            <select id="serverType" onchange="updateForm()">
+              <option value="local">🏠 Uso Local (mesma máquina)</option>
+              <option value="local-network">🏠 Rede Local (outras máquinas na mesma rede)</option>
+              <option value="public">🌐 Acesso Público (qualquer lugar da internet)</option>
+              <option value="domain">🌐 Domínio/DNS Dinâmico</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="serverHost">IP/Domínio do Servidor:</label>
+            <input type="text" id="serverHost" placeholder="127.0.0.1" value="127.0.0.1">
+          </div>
+          
+          <div class="examples">
+            <h3>📋 Exemplos por Tipo de Uso</h3>
+            <div class="example-item">
+              <strong>🏠 Uso Local:</strong> <code>127.0.0.1</code> ou <code>localhost</code>
+            </div>
+            <div class="example-item">
+              <strong>🏠 Rede Local:</strong> <code>192.168.1.100</code>, <code>192.168.0.50</code>
+            </div>
+            <div class="example-item">
+              <strong>🌐 IP Público:</strong> <code>203.0.113.42</code>, <code>198.51.100.10</code>
+            </div>
+            <div class="example-item">
+              <strong>🌐 Domínio:</strong> <code>meuservidor.com.br</code>, <code>minhacasa.ddns.net</code>
+            </div>
+          </div>
+          
+          <div class="alert alert-warning">
+            <strong>⚠️ Atenção:</strong> Para acesso remoto, certifique-se de que as portas 8765, 8766, 3001, 3002 estão abertas no firewall da máquina servidor e no roteador (port forwarding).
+          </div>
+          
+          <button class="btn" onclick="applyConfig()">💾 Aplicar Configuração</button>
+          <button class="btn btn-secondary" onclick="resetConfig()">🔄 Resetar para Local</button>
+        </div>
+        
+        <!-- Instruções -->
+        <div class="section">
+          <h2>📋 Instruções de Configuração</h2>
+          
+          <div class="steps">
+            <div class="step">
+              <h4>Determine o IP da Máquina Servidor</h4>
+              <p>Na máquina que roda os servidores, execute no terminal:</p>
+              <p><code>ipconfig</code> (Windows) ou <code>ifconfig</code> (Linux/Mac)</p>
+              <p>Anote o IP da rede local (geralmente 192.168.x.x)</p>
+            </div>
+            
+            <div class="step">
+              <h4>Configurar Firewall (Se necessário)</h4>
+              <p>Libere as portas no firewall da máquina servidor:</p>
+              <p><code>8765, 8766, 3001, 3002</code></p>
+            </div>
+            
+            <div class="step">
+              <h4>Port Forwarding (Para acesso pela internet)</h4>
+              <p>Configure o roteador para redirecionar as portas:</p>
+              <p>Roteador → Port Forwarding → IP da máquina servidor</p>
+            </div>
+            
+            <div class="step">
+              <h4>Aplicar e Testar</h4>
+              <p>Configure o IP acima, clique em "Aplicar Configuração"</p>
+              <p>Acesse <code>index.html</code> e teste a conectividade</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <a href="index.html" class="btn">🚀 Ir para WhatIntegra</a>
+          <a href="setup.html" class="btn btn-secondary">🔧 Configurações Avançadas</a>
+        </div>
+      </div>
+    </div>
+    
+    <script src="./assets/server-config.js"></script>
+    <script>
+      // Atualizar display da configuração atual
+      function updateCurrentConfig() {
+        const config = window.WhatIntegra?.serverConfig || {
+          SERVER_HOST: '127.0.0.1',
+          AUTH_HTTP_PORT: 8765,
+          AUTH_HTTPS_PORT: 8766,
+          WHATSAPP_HTTP_PORT: 3001,
+          WHATSAPP_HTTPS_PORT: 3002
+        };
+        
+        document.getElementById('currentAuthHttp').textContent = 
+          `http://${config.SERVER_HOST}:${config.AUTH_HTTP_PORT}/api`;
+        document.getElementById('currentAuthHttps').textContent = 
+          `https://${config.SERVER_HOST}:${config.AUTH_HTTPS_PORT}/api`;
+        document.getElementById('currentWhatsappHttp').textContent = 
+          `http://${config.SERVER_HOST}:${config.WHATSAPP_HTTP_PORT}`;
+        document.getElementById('currentWhatsappHttps').textContent = 
+          `https://${config.SERVER_HOST}:${config.WHATSAPP_HTTPS_PORT}`;
+        
+        document.getElementById('accessType').textContent = 
+          config.SERVER_HOST === '127.0.0.1' || config.SERVER_HOST === 'localhost' ? 
+          '🏠 LOCAL (mesma máquina)' : '🌐 REMOTO (acesso de qualquer lugar)';
+        
+        document.getElementById('serverHost').value = config.SERVER_HOST;
+      }
+      
+      function updateForm() {
+        const serverType = document.getElementById('serverType').value;
+        const hostInput = document.getElementById('serverHost');
+        
+        switch(serverType) {
+          case 'local':
+            hostInput.value = '127.0.0.1';
+            hostInput.placeholder = '127.0.0.1 ou localhost';
+            break;
+          case 'local-network':
+            hostInput.value = '192.168.1.';
+            hostInput.placeholder = '192.168.1.100';
+            break;
+          case 'public':
+            hostInput.value = '';
+            hostInput.placeholder = '203.0.113.42';
+            break;
+          case 'domain':
+            hostInput.value = '';
+            hostInput.placeholder = 'meuservidor.com.br';
+            break;
+        }
+        
+        hostInput.focus();
+      }
+      
+      function applyConfig() {
+        const newHost = document.getElementById('serverHost').value.trim();
+        
+        if (!newHost) {
+          alert('⚠️ Por favor, insira um IP/domínio válido');
+          return;
+        }
+        
+        // Atualizar a configuração
+        window.WhatIntegra = window.WhatIntegra || {};
+        window.WhatIntegra.serverConfig = {
+          SERVER_HOST: newHost,
+          AUTH_HTTP_PORT: 8765,
+          AUTH_HTTPS_PORT: 8766,
+          WHATSAPP_HTTP_PORT: 3001,
+          WHATSAPP_HTTPS_PORT: 3002
+        };
+        
+        // Salvar no localStorage para persistir
+        localStorage.setItem('whatintegra_server_host', newHost);
+        
+        updateCurrentConfig();
+        
+        // Feedback visual
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success';
+        alertDiv.innerHTML = `
+          <strong>✅ Configuração aplicada!</strong><br>
+          Servidor configurado para: <code>${newHost}</code><br>
+          <small>A configuração foi salva e será usada na próxima vez que acessar o WhatIntegra.</small>
+        `;
+        
+        document.querySelector('.section').appendChild(alertDiv);
+        
+        setTimeout(() => {
+          alertDiv.remove();
+        }, 5000);
+      }
+      
+      function resetConfig() {
+        localStorage.removeItem('whatintegra_server_host');
+        
+        window.WhatIntegra.serverConfig = {
+          SERVER_HOST: '127.0.0.1',
+          AUTH_HTTP_PORT: 8765,
+          AUTH_HTTPS_PORT: 8766,
+          WHATSAPP_HTTP_PORT: 3001,
+          WHATSAPP_HTTPS_PORT: 3002
+        };
+        
+        updateCurrentConfig();
+        document.getElementById('serverType').value = 'local';
+        
+        alert('✅ Configuração resetada para uso local (127.0.0.1)');
+      }
+      
+      // Carregar configuração salva
+      document.addEventListener('DOMContentLoaded', () => {
+        const savedHost = localStorage.getItem('whatintegra_server_host');
+        if (savedHost) {
+          window.WhatIntegra = window.WhatIntegra || {};
+          window.WhatIntegra.serverConfig = {
+            ...window.WhatIntegra.serverConfig,
+            SERVER_HOST: savedHost
+          };
+        }
+        
+        updateCurrentConfig();
+      });
+    </script>
+  </body>
+</html>

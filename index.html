@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="./assets/link-preview.css" />
     
     <!-- WhatIntegra Modules -->
+    <script src="./assets/server-config.js"></script>
     <script src="./assets/config.js"></script>
     <script src="./assets/utils.js"></script>
     <script src="./assets/connectivity.js"></script>
@@ -41,8 +42,11 @@
         <div id="configAlert" class="config-alert hidden-alert">
           <div class="alert-content">
             <h3>⚠️ Configuração Necessária</h3>
-            <p>Para usar o WhatsApp Web, você precisa autorizar os servidores locais primeiro.</p>
-            <a href="./setup.html" class="config-btn">🔧 Configurar Agora</a>
+            <p>Para usar o WhatsApp Web, você precisa configurar os servidores primeiro.</p>
+            <div class="config-buttons">
+              <a href="./setup-servidor.html" class="config-btn primary">�️ Configurar Servidor</a>
+              <a href="./setup.html" class="config-btn">🔧 Config Avançada</a>
+            </div>
           </div>
         </div>
 

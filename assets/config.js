@@ -1,35 +1,52 @@
 // WhatIntegra - Configuração Global
 // Configurações e constantes da aplicação
 
+// === CONFIGURAÇÃO DO SERVIDOR ===
+// Obter configuração do servidor (definida em server-config.js)
+const serverConfig = window.WhatIntegra?.serverConfig || {
+  SERVER_HOST: '127.0.0.1', // fallback
+  AUTH_HTTP_PORT: 8765,
+  AUTH_HTTPS_PORT: 8766,
+  WHATSAPP_HTTP_PORT: 3001,
+  WHATSAPP_HTTPS_PORT: 3002
+};
+
+const SERVER_HOST = serverConfig.SERVER_HOST;
+
 // === CONFIGURAÇÃO DE AMBIENTE ===
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const isLocalHttpServer = location.port === '8080' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
-// URLs baseadas no ambiente
-// Para GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
-// Para localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
-const API_URL = (isGitHub && !isLocalHttpServer) ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
-const WHATSAPP_URL = (isGitHub && !isLocalHttpServer) ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
+// URLs baseadas no ambiente e servidor configurado
+const API_URL = (isGitHub && !isLocalHttpServer) ? 
+  `https://${SERVER_HOST}:${serverConfig.AUTH_HTTPS_PORT}/api` : 
+  `http://${SERVER_HOST}:${serverConfig.AUTH_HTTP_PORT}/api`;
+
+const WHATSAPP_URL = (isGitHub && !isLocalHttpServer) ? 
+  `https://${SERVER_HOST}:${serverConfig.WHATSAPP_HTTPS_PORT}` : 
+  `http://${SERVER_HOST}:${serverConfig.WHATSAPP_HTTP_PORT}`;
 
 // Debug da configuração com informações detalhadas
 console.log('🔧 === WHATINTEGRA - CONFIGURAÇÃO INICIAL ===');
+console.log('🖥️ Servidor configurado:', {
+  SERVER_HOST: SERVER_HOST,
+  'Tipo de acesso': SERVER_HOST === '127.0.0.1' || SERVER_HOST === 'localhost' ? 
+    '🏠 LOCAL (mesma máquina)' : 
+    '🌐 REMOTO (acesso de qualquer lugar)',
+  'Portas': serverConfig
+});
 console.log('🌍 Informações do ambiente:', {
   hostname: location.hostname,
   protocol: location.protocol,
   port: location.port,
-  pathname: location.pathname,
   origin: location.origin,
-  userAgent: navigator.userAgent.substring(0, 100) + '...'
+  userAgent: navigator.userAgent.substring(0, 50) + '...'
 });
 console.log('🎯 Detecção de ambiente:', {
   isGitHub: isGitHub,
   isLocalhost: isLocalhost,
-  isLocalHttpServer: isLocalHttpServer,
-  'GitHub detectado por': isGitHub ? 'hostname contém github.io ou github.com' : 'hostname não é GitHub',
-  'Localhost detectado por': isLocalhost ? 'hostname é localhost ou 127.0.0.1' : 'hostname não é localhost',
-  'HTTP Server local detectado por': isLocalHttpServer ? 'porta 8080 + localhost/127.0.0.1' : 'não é http-server local',
-  'Configuração final': isLocalHttpServer ? 'FORÇANDO HTTP (Solução 3)' : (isGitHub ? 'GitHub Pages (HTTPS)' : 'Localhost (HTTP)')
+  isLocalHttpServer: isLocalHttpServer
 });
 console.log('🔗 URLs configuradas:', {
   API_URL: API_URL,

@@ -63,10 +63,10 @@ node whatsapp-server.js
 
 ### 3. **Credenciais Padrão**
 
-- **Usuário**: `Comercial`
-- **Senha**: `Comercial@2025`
+- **Usuário**: `admin`
+- **Senha**: Use `create-user.js` para criar sua senha
 
-> ⚠️ **Importante**: Altere as credenciais padrão em `local-auth-server/data/users.json`
+> ⚠️ **Importante**: Execute `node create-user.js seuUsuario suaSenha` para criar suas credenciais
 
 ## 🛠️ Tecnologias Utilizadas
 

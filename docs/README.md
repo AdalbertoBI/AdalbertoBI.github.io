@@ -72,8 +72,8 @@ graph TB
 **Request:**
 ```json
 {
-  "username": "Comercial",
-  "password": "Comercial@2025"
+  "username": "seuUsuario",
+  "password": "suaSenha"
 }
 ```
 
