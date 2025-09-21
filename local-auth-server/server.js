@@ -41,13 +41,20 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'https://adalbertobi.github.io', 
     'http://localhost', 
-    'http://127.0.0.1'
+    'http://127.0.0.1',
+    'http://192.168.1.4',  // IP da máquina local
+    'https://192.168.1.4'  // IP da máquina local HTTPS
   ];
+  
+  // Permitir qualquer origem de rede local (192.168.x.x, 10.x.x.x, etc.)
+  const localNetworkPattern = /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
+  
   const origin = req.headers.origin;
 
   console.log(`📡 ${new Date().toLocaleTimeString()} - ${req.method} ${req.url} - Origin: ${origin || 'none'}`);
 
-  if (allowedOrigins.some(allowed => origin?.startsWith(allowed))) {
+  if (allowedOrigins.some(allowed => origin?.startsWith(allowed)) || 
+      (origin && localNetworkPattern.test(origin))) {
     res.header('Access-Control-Allow-Origin', origin);
     console.log(`✅ Origin ${origin} permitida.`);
   } else if (origin) {
@@ -134,8 +141,14 @@ app.get('/api/session', (req, res) => {
   }
 });
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`Auth server rodando em http://127.0.0.1:${PORT}`);
+// Configuração de host para permitir acesso remoto
+const HOST = process.env.HOST || '0.0.0.0'; // 0.0.0.0 permite acesso de qualquer IP
+
+app.listen(PORT, HOST, () => {
+  console.log(`✅ Auth server rodando em:`);
+  console.log(`   - Local: http://127.0.0.1:${PORT}`);
+  console.log(`   - Rede: http://192.168.1.4:${PORT}`);
+  console.log(`   - Todas as interfaces: http://${HOST}:${PORT}`);
 });
 
 // Iniciar servidor HTTPS se os certificados existirem
@@ -146,12 +159,15 @@ if (fs.existsSync(SSL_CERT_PATH) && fs.existsSync(SSL_KEY_PATH)) {
       cert: fs.readFileSync(SSL_CERT_PATH)
     };
 
-    https.createServer(httpsOptions, app).listen(HTTPS_PORT, '127.0.0.1', () => {
-      console.log(`🔒 Auth server HTTPS rodando em https://127.0.0.1:${HTTPS_PORT}`);
+    https.createServer(httpsOptions, app).listen(HTTPS_PORT, HOST, () => {
+      console.log(`🔒 Auth server HTTPS rodando em:`);
+      console.log(`   - Local: https://127.0.0.1:${HTTPS_PORT}`);
+      console.log(`   - Rede: https://192.168.1.4:${HTTPS_PORT}`);
+      console.log(`   - Todas as interfaces: https://${HOST}:${HTTPS_PORT}`);
     });
   } catch (error) {
     console.log('⚠️  Não foi possível iniciar servidor HTTPS:', error.message);
-    console.log('   Servidor HTTP continua disponível em http://127.0.0.1:' + PORT);
+    console.log(`   Servidor HTTP continua disponível em http://${HOST}:${PORT}`);
   }
 } else {
   console.log('⚠️  Certificados SSL não encontrados. Apenas HTTP disponível.');

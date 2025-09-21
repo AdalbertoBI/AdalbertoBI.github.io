@@ -1018,9 +1018,15 @@ app.post('/api/whatsapp/send-media', authenticateToken, upload.single('file'), a
 console.log('🚀 Inicializando servidor WhatIntegra...');
 initializeWhatsApp();
 
+// Configuração de host para permitir acesso remoto
+const HOST = process.env.HOST || '0.0.0.0'; // 0.0.0.0 permite acesso de qualquer IP
+
 // Iniciar servidor HTTP
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`✅ WhatIntegra rodando em http://127.0.0.1:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`✅ WhatIntegra WhatsApp Server rodando em:`);
+  console.log(`   - Local: http://127.0.0.1:${PORT}`);
+  console.log(`   - Rede: http://192.168.1.4:${PORT}`);
+  console.log(`   - Todas as interfaces: http://${HOST}:${PORT}`);
   console.log(`🔌 WebSocket habilitado para tempo real`);
   console.log(`📱 WhatsApp Web integrado`);
 });
@@ -1046,14 +1052,17 @@ if (fs.existsSync(SSL_CERT_PATH) && fs.existsSync(SSL_KEY_PATH)) {
     // Configurar os mesmos eventos do WebSocket para HTTPS
     setupWebSocketEvents(httpsIo);
 
-    httpsServer.listen(HTTPS_PORT, '127.0.0.1', () => {
-      console.log(`🔒 WhatIntegra HTTPS rodando em https://127.0.0.1:${HTTPS_PORT}`);
+    httpsServer.listen(HTTPS_PORT, HOST, () => {
+      console.log(`🔒 WhatIntegra HTTPS rodando em:`);
+      console.log(`   - Local: https://127.0.0.1:${HTTPS_PORT}`);
+      console.log(`   - Rede: https://192.168.1.4:${HTTPS_PORT}`);
+      console.log(`   - Todas as interfaces: https://${HOST}:${HTTPS_PORT}`);
       console.log(`🔌 WebSocket HTTPS habilitado para tempo real`);
       console.log(`📱 WhatsApp Web integrado via HTTPS`);
     });
   } catch (error) {
     console.log('⚠️  Não foi possível iniciar servidor HTTPS:', error.message);
-    console.log('   Servidor HTTP continua disponível em http://127.0.0.1:' + PORT);
+    console.log(`   Servidor HTTP continua disponível em http://${HOST}:${PORT}`);
   }
 } else {
   console.log('⚠️  Certificados SSL não encontrados. Apenas HTTP disponível.');
