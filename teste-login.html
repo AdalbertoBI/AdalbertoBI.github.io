@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste WhatIntegra</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .login-container { max-width: 400px; margin: 0 auto; }
+        .login-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #25d366; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #25d366; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #128c7e; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <main id="loginScreen" class="login-container">
+        <section class="login-card">
+            <h1>🚀 WhatIntegra</h1>
+            <p class="login-subtitle">Acesse seu WhatsApp Web de qualquer lugar</p>
+
+            <form id="loginForm">
+                <label for="username">Usuário</label>
+                <input id="username" name="username" required />
+
+                <label for="password">Senha</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+                <button type="submit" id="loginBtn">Entrar</button>
+                <button type="button" id="testConnectionBtn" class="btn-secondary">🧪 Testar Conectividade</button>
+            </form>
+
+            <output id="status" class="status" aria-live="polite"></output>
+        </section>
+    </main>
+
+    <script>
+        console.log('Página de teste carregada');
+        console.log('Login screen element:', document.getElementById('loginScreen'));
+        console.log('Login form element:', document.getElementById('loginForm'));
+
+        // Simular inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM carregado - tela de login deve estar visível');
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen) {
+                loginScreen.classList.remove('hidden');
+                console.log('Tela de login exibida');
+            }
+        });
+    </script>
+</body>
+</html>
