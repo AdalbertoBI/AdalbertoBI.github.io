@@ -205,7 +205,7 @@ app.get('/api/session', (req, res) => {
   }
 });
 
-// Rota temporária para registro de usuários (remover após configuração inicial) - v2
+// Rota temporária para registro de usuários (remover após configuração inicial) - v3
 app.post('/api/register', async (req, res) => {
   console.log('📝 Register attempt:', req.body);
   
