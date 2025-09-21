@@ -7,20 +7,10 @@ export WHATSAPP_PORT=$((${PORT:-8080} + 1000))
 export NODE_ENV=${NODE_ENV:-production}
 
 echo "🚀 Iniciando WhatIntegra..."
-echo "📍 Porta Auth: $PORT"
+echo "📍 Porta Principal (Auth): $PORT"
 echo "📍 Porta WhatsApp: $WHATSAPP_PORT"
 echo "🌍 Ambiente: $NODE_ENV"
 
-# Iniciar servidor de autenticação em background
-echo "🔐 Iniciando servidor de autenticação..."
-node server.js &
-
-# Aguardar um pouco para o servidor de auth subir
-sleep 5
-
-# Iniciar servidor WhatsApp
-echo "📱 Iniciando servidor WhatsApp..."
-node whatsapp-server.js &
-
-# Aguardar processos
-wait
+# Iniciar servidor de autenticação (que agora inclui proxy para WhatsApp)
+echo "� Iniciando servidor de autenticação..."
+node server.js

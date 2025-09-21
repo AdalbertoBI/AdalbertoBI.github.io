@@ -5,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import https from 'https';
 import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+import httpProxy from 'http-proxy';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -226,6 +228,31 @@ app.post('/api/register', async (req, res) => {
   
   console.log('✅ User registered:', username);
   res.json({ message: 'Usuário criado com sucesso', username });
+});
+
+// Configurar proxy para WhatsApp
+const whatsappPort = process.env.WHATSAPP_PORT || (parseInt(process.env.PORT || '8080') + 1000);
+const proxy = httpProxy.createProxyServer();
+
+// Rota para proxy do WhatsApp
+app.use('/whatsapp', (req, res) => {
+  proxy.web(req, res, { target: `http://localhost:${whatsappPort}` });
+});
+
+// Iniciar servidor WhatsApp como processo filho
+console.log(`📱 Iniciando servidor WhatsApp na porta ${whatsappPort}...`);
+const whatsappProcess = spawn('node', ['whatsapp-server.js'], {
+  cwd: __dirname,
+  stdio: 'inherit',
+  env: { ...process.env, PORT: whatsappPort }
+});
+
+whatsappProcess.on('error', (error) => {
+  console.error('❌ Erro ao iniciar WhatsApp:', error);
+});
+
+whatsappProcess.on('exit', (code) => {
+  console.log(`⚠️  Processo WhatsApp finalizado com código ${code}`);
 });
 
 // Usar HOST configurado anteriormente
