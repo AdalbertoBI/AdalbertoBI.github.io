@@ -4,7 +4,7 @@
 // === CONFIGURAÇÃO INTELIGENTE DE AMBIENTE ===
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const isLocalHttpServer = location.port === '8080' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+const isLocalHttpServer = (location.port === '8080' || location.port === '5500') && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 const isNgrok = location.hostname.includes('ngrok') || location.hostname.includes('ngrok-free.app');
 const isRailway = location.hostname.includes('railway.app') || location.hostname.includes('up.railway.app');
 const isCustomDomain = location.hostname.includes('whatintegra.com');
@@ -29,20 +29,26 @@ if (isCustomDomain) {
     // GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
     API_URL = 'https://186.249.152.5:8766/api';
     WHATSAPP_URL = 'https://186.249.152.5:3002';
+} else if (isLocalHttpServer) {
+    // Servidor HTTP local (teste): usar Railway Cloud
+    API_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/api';
+    WHATSAPP_URL = 'https://adalbertobiwhatintegra-production.up.railway.app';
 } else {
-    // Localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
+    // Localhost direto (desenvolvimento): usar localhost
     API_URL = 'http://127.0.0.1:8765/api';
     WHATSAPP_URL = 'http://127.0.0.1:3001';
 }
 
 // Debug da configuração com informações detalhadas
 console.log('🔧 === WHATINTEGRA - CONFIGURAÇÃO INICIAL ===');
-console.log('🖥️ Servidor configurado:', {
-  SERVER_HOST: SERVER_HOST,
-  'Tipo de acesso': SERVER_HOST === '127.0.0.1' || SERVER_HOST === 'localhost' ? 
-    '🏠 LOCAL (mesma máquina)' : 
-    '🌐 REMOTO (acesso de qualquer lugar)',
-  'Portas': serverConfig
+console.log('🌍 Ambiente detectado:', {
+  isGitHub: isGitHub,
+  isLocalhost: isLocalhost,
+  isLocalHttpServer: isLocalHttpServer,
+  isNgrok: isNgrok,
+  isRailway: isRailway,
+  isCustomDomain: isCustomDomain,
+  'Configuração aplicada': isCustomDomain ? 'Domínio Personalizado' : (isRailway ? 'Railway Cloud' : (isLocalHttpServer ? 'Servidor HTTP Local (Railway)' : (isNgrok ? 'Ngrok Tunnel' : (isGitHub ? 'GitHub Pages' : 'Localhost Desenvolvimento'))))
 });
 console.log('🌍 Informações do ambiente:', {
   hostname: location.hostname,
@@ -51,17 +57,11 @@ console.log('🌍 Informações do ambiente:', {
   origin: location.origin,
   userAgent: navigator.userAgent.substring(0, 50) + '...'
 });
-console.log('🎯 Detecção de ambiente:', {
-  isGitHub: isGitHub,
-  isLocalhost: isLocalhost,
-  isLocalHttpServer: isLocalHttpServer
-});
 console.log('🔗 URLs configuradas:', {
   API_URL: API_URL,
   WHATSAPP_URL: WHATSAPP_URL,
   'Protocolo da API': API_URL.split(':')[0],
-  'Protocolo do WhatsApp': WHATSAPP_URL.split(':')[0],
-  'Configuração aplicada': isLocalHttpServer ? '🔓 HTTP FORÇADO (Solução 3)' : (isGitHub ? '🔒 HTTPS GitHub' : '🔓 HTTP Localhost')
+  'Protocolo do WhatsApp': WHATSAPP_URL.split(':')[0]
 });
 console.log('💾 Estado do localStorage:', {
   hasStoredUser: !!localStorage.getItem('wi_user'),
