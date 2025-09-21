@@ -3,12 +3,35 @@
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const isLocalHttpServer = location.port === '8080' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+const isNgrok = location.hostname.includes('ngrok') || location.hostname.includes('ngrok-free.app');
+const isRailway = location.hostname.includes('railway.app') || location.hostname.includes('up.railway.app');
+const isCustomDomain = location.hostname.includes('whatintegra.com');
 
-// URLs baseadas no ambiente
-// Para GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
-// Para localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
-const API_URL = (isGitHub && !isLocalHttpServer) ? 'https://127.0.0.1:8766/api' : 'http://127.0.0.1:8765/api';
-const WHATSAPP_URL = (isGitHub && !isLocalHttpServer) ? 'https://127.0.0.1:3002' : 'http://127.0.0.1:3001';
+// Configuração inteligente de URLs
+let API_URL, WHATSAPP_URL;
+
+if (isCustomDomain) {
+    // Domínio personalizado - usar subdomínios
+    API_URL = 'https://api.whatintegra.com/api';
+    WHATSAPP_URL = 'https://whatsapp.whatintegra.com';
+} else if (isRailway) {
+    // Railway - serviços separados
+    API_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/api';
+    WHATSAPP_URL = 'https://adalbertobiwhatintegra-production.up.railway.app';
+} else if (isNgrok) {
+    // Se estamos acessando via Ngrok, usar URLs específicas configuradas
+    // Essas URLs devem ser atualizadas quando os túneis Ngrok forem criados
+    API_URL = prompt('🔗 Digite a URL do túnel Ngrok para o servidor de autenticação:\n(ex: https://abc123.ngrok-free.app/api)') || 'http://127.0.0.1:8765/api';
+    WHATSAPP_URL = prompt('📱 Digite a URL do túnel Ngrok para o servidor WhatsApp:\n(ex: https://xyz789.ngrok-free.app)') || 'http://127.0.0.1:3001';
+} else if (isGitHub && !isLocalHttpServer) {
+    // GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
+    API_URL = 'https://186.249.152.5:8766/api';
+    WHATSAPP_URL = 'https://186.249.152.5:3002';
+} else {
+    // Localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
+    API_URL = 'http://127.0.0.1:8765/api';
+    WHATSAPP_URL = 'http://127.0.0.1:3001';
+}
 
 // Debug da configuração com informações detalhadas
 console.log('🔧 === WHATINTEGRA - CONFIGURAÇÃO INICIAL ===');
@@ -24,10 +47,16 @@ console.log('🎯 Detecção de ambiente:', {
   isGitHub: isGitHub,
   isLocalhost: isLocalhost,
   isLocalHttpServer: isLocalHttpServer,
+  isNgrok: isNgrok,
+  isRailway: isRailway,
+  isCustomDomain: isCustomDomain,
   'GitHub detectado por': isGitHub ? 'hostname contém github.io ou github.com' : 'hostname não é GitHub',
   'Localhost detectado por': isLocalhost ? 'hostname é localhost ou 127.0.0.1' : 'hostname não é localhost',
   'HTTP Server local detectado por': isLocalHttpServer ? 'porta 8080 + localhost/127.0.0.1' : 'não é http-server local',
-  'Configuração final': isLocalHttpServer ? 'FORÇANDO HTTP (Solução 3)' : (isGitHub ? 'GitHub Pages (HTTPS)' : 'Localhost (HTTP)')
+  'Ngrok detectado por': isNgrok ? 'hostname contém ngrok ou ngrok-free.app' : 'não é Ngrok',
+  'Railway detectado por': isRailway ? 'hostname contém railway.app ou up.railway.app' : 'não é Railway',
+  'Domínio personalizado detectado por': isCustomDomain ? 'hostname contém whatintegra.com' : 'não é domínio personalizado',
+  'Configuração final': isCustomDomain ? 'Domínio Personalizado (api.whatintegra.com)' : (isRailway ? 'Railway Cloud (URLs fixas)' : (isNgrok ? 'Ngrok Tunnel (URLs dinâmicas)' : (isLocalHttpServer ? 'FORÇANDO HTTP (Solução 3)' : (isGitHub ? 'GitHub Pages (HTTPS)' : 'Localhost (HTTP)'))))
 });
 console.log('🔗 URLs configuradas:', {
   API_URL: API_URL,
