@@ -12,7 +12,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 8765;
 const HTTPS_PORT = process.env.HTTPS_PORT || 8766;
-const DATA_DIR = path.join(__dirname, 'data');
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+const DATA_DIR = process.env.WHATSAPP_DATA_DIR || path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const JWT_SECRET_FILE = path.join(DATA_DIR, '.jwt_secret');
 
@@ -90,6 +91,18 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, message: 'Server is running', timestamp: new Date().toISOString() });
 });
 
+// Rota de health check para Railway
+app.get('/health', (req, res) => {
+  console.log('🏥 Railway health check from:', req.headers.origin || 'Railway');
+  res.status(200).json({ 
+    status: 'healthy',
+    service: 'whatintegra-auth',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
 // Rota específica para teste de conectividade do GitHub Pages
 app.get('/', (req, res) => {
   console.log('🏠 Root access from:', req.headers.origin || 'unknown');
@@ -141,14 +154,13 @@ app.get('/api/session', (req, res) => {
   }
 });
 
-// Configuração de host para permitir acesso remoto
-const HOST = process.env.HOST || '0.0.0.0'; // 0.0.0.0 permite acesso de qualquer IP
-
+// Usar HOST configurado anteriormente
 app.listen(PORT, HOST, () => {
   console.log(`✅ Auth server rodando em:`);
   console.log(`   - Local: http://127.0.0.1:${PORT}`);
   console.log(`   - Rede: http://192.168.1.4:${PORT}`);
   console.log(`   - Todas as interfaces: http://${HOST}:${PORT}`);
+  console.log(`   - Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
 
 // Iniciar servidor HTTPS se os certificados existirem

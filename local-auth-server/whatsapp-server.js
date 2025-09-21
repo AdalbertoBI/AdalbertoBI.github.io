@@ -28,12 +28,13 @@ const io = new Server(server, {
   }
 });
 
-const PORT = 3001;
-const HTTPS_PORT = 3002;
-const DATA_DIR = path.join(__dirname, 'data');
+const PORT = process.env.PORT || 3001;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3002;
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+const DATA_DIR = process.env.WHATSAPP_DATA_DIR || path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const JWT_SECRET_FILE = path.join(DATA_DIR, '.jwt_secret');
-const WHATSAPP_SESSION_DIR = path.join(DATA_DIR, 'whatsapp_session');
+const WHATSAPP_SESSION_DIR = process.env.WHATSAPP_SESSION_PATH || path.join(DATA_DIR, 'whatsapp_session');
 
 // Caminhos dos certificados SSL
 const SSL_CERT_PATH = path.join(__dirname, 'cert.pem');
@@ -627,6 +628,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Rota de health check para Railway
+app.get('/health', (req, res) => {
+  console.log('🏥 Railway health check - WhatsApp Server');
+  res.status(200).json({ 
+    status: 'healthy',
+    service: 'whatintegra-whatsapp',
+    whatsappStatus: whatsappStatus,
+    connectedUsers: connectedUsers.size,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
 // === ENDPOINTS PARA MÍDIAS E FOTOS DE PERFIL ===
 
 // Cache de fotos de perfil para melhor performance
@@ -1018,15 +1033,13 @@ app.post('/api/whatsapp/send-media', authenticateToken, upload.single('file'), a
 console.log('🚀 Inicializando servidor WhatIntegra...');
 initializeWhatsApp();
 
-// Configuração de host para permitir acesso remoto
-const HOST = process.env.HOST || '0.0.0.0'; // 0.0.0.0 permite acesso de qualquer IP
-
-// Iniciar servidor HTTP
+// Iniciar servidor HTTP (usando HOST configurado anteriormente)
 server.listen(PORT, HOST, () => {
   console.log(`✅ WhatIntegra WhatsApp Server rodando em:`);
   console.log(`   - Local: http://127.0.0.1:${PORT}`);
   console.log(`   - Rede: http://192.168.1.4:${PORT}`);
   console.log(`   - Todas as interfaces: http://${HOST}:${PORT}`);
+  console.log(`   - Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔌 WebSocket habilitado para tempo real`);
   console.log(`📱 WhatsApp Web integrado`);
 });

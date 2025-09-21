@@ -1,0 +1,24 @@
+# Railway Configuration for WhatIntegra
+
+# Build Configuration
+[build]
+builder = "nixpacks"
+
+# Environment Variables
+[env]
+NODE_ENV = "production"
+PORT = "$PORT"
+
+# Deploy Configuration  
+[deploy]
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"
+
+# Service Configuration
+[services.auth-server]
+source = "local-auth-server"
+build.watchPatterns = ["**/*.js", "**/*.json"]
+
+[services.whatsapp-server]
+source = "local-auth-server" 
+build.watchPatterns = ["**/*.js", "**/*.json"]
