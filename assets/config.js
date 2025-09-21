@@ -1,31 +1,39 @@
 // WhatIntegra - Configuração Global
 // Configurações e constantes da aplicação
 
-// === CONFIGURAÇÃO DO SERVIDOR ===
-// Obter configuração do servidor (definida pelo sistema inteligente)
-const serverConfig = window.WhatIntegra?.serverConfig || {
-  SERVER_HOST: '192.168.1.4', // IP padrão da máquina atual
-  AUTH_HTTP_PORT: 8765,
-  AUTH_HTTPS_PORT: 8766,
-  WHATSAPP_HTTP_PORT: 3001,
-  WHATSAPP_HTTPS_PORT: 3002
-};
-
-const SERVER_HOST = serverConfig.SERVER_HOST;
-
-// === CONFIGURAÇÃO DE AMBIENTE ===
+// === CONFIGURAÇÃO INTELIGENTE DE AMBIENTE ===
 const isGitHub = location.hostname.includes('github.io') || location.hostname.includes('github.com');
 const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const isLocalHttpServer = location.port === '8080' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+const isNgrok = location.hostname.includes('ngrok') || location.hostname.includes('ngrok-free.app');
+const isRailway = location.hostname.includes('railway.app') || location.hostname.includes('up.railway.app');
+const isCustomDomain = location.hostname.includes('whatintegra.com');
 
-// URLs baseadas no ambiente e servidor configurado
-const API_URL = (isGitHub && !isLocalHttpServer) ? 
-  `https://${SERVER_HOST}:${serverConfig.AUTH_HTTPS_PORT}/api` : 
-  `http://${SERVER_HOST}:${serverConfig.AUTH_HTTP_PORT}/api`;
+// === CONFIGURAÇÃO INTELIGENTE DE URLs ===
+let API_URL, WHATSAPP_URL;
 
-const WHATSAPP_URL = (isGitHub && !isLocalHttpServer) ? 
-  `https://${SERVER_HOST}:${serverConfig.WHATSAPP_HTTPS_PORT}` : 
-  `http://${SERVER_HOST}:${serverConfig.WHATSAPP_HTTP_PORT}`;
+if (isCustomDomain) {
+    // Domínio personalizado - usar subdomínios
+    API_URL = 'https://api.whatintegra.com/api';
+    WHATSAPP_URL = 'https://whatsapp.whatintegra.com';
+} else if (isRailway) {
+    // Railway - serviços separados
+    API_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/api';
+    WHATSAPP_URL = 'https://adalbertobiwhatintegra-production.up.railway.app';
+} else if (isNgrok) {
+    // Se estamos acessando via Ngrok, usar URLs específicas configuradas
+    // Essas URLs devem ser atualizadas quando os túneis Ngrok forem criados
+    API_URL = prompt('🔗 Digite a URL do túnel Ngrok para o servidor de autenticação:\n(ex: https://abc123.ngrok-free.app/api)') || 'http://127.0.0.1:8765/api';
+    WHATSAPP_URL = prompt('📱 Digite a URL do túnel Ngrok para o servidor WhatsApp:\n(ex: https://xyz789.ngrok-free.app)') || 'http://127.0.0.1:3001';
+} else if (isGitHub && !isLocalHttpServer) {
+    // GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
+    API_URL = 'https://186.249.152.5:8766/api';
+    WHATSAPP_URL = 'https://186.249.152.5:3002';
+} else {
+    // Localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
+    API_URL = 'http://127.0.0.1:8765/api';
+    WHATSAPP_URL = 'http://127.0.0.1:3001';
+}
 
 // Debug da configuração com informações detalhadas
 console.log('🔧 === WHATINTEGRA - CONFIGURAÇÃO INICIAL ===');

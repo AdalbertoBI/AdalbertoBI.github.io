@@ -1,29 +1,7 @@
 <!doctype html>
 <html lang="pt-br">
-          <output id="status" class="status" aria-live="polite"></output>
-
-        <!-- Status da Configuração do Servidor -->
-        <div id="serverStatus" class="server-status hidden">
-          <div class="server-status-content">
-            <div class="server-info">
-              <span class="server-icon">🖥️</span>
-              <div class="server-details">
-                <strong>Servidor:</strong> <span id="currentServerHost">Detectando...</span>
-                <small id="serverSource">Configuração automática</small>
-              </div>
-            </div>
-            <button id="changeServerBtn" class="btn-change-server">📝 Alterar</button>
-          </div>
-        </div>
-
-        <div id="configAlert" class="config-alert hidden-alert">
-          <div class="alert-content">
-            <h3>⚠️ Configuração Necessária</h3>
-            <p>Para usar o WhatsApp Web, você precisa configurar os servidores primeiro.</p>
-            <div class="config-buttons">
-              <a href="./setup-servidor.html" class="config-btn primary">🖥️ Configurar Servidor</a>
-              <a href="./setup.html" class="config-btn">🔧 Config Avançada</a>
-            </div>  <meta charset="utf-8" />
+<head>
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>WhatIntegra - WhatsApp Web</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./assets/styles.css" />
     <link rel="stylesheet" href="./assets/link-preview.css" />
-    
+
     <!-- WhatIntegra Modules -->
     <script src="./assets/smart-config.js"></script>
     <script src="./assets/server-config.js"></script>
@@ -42,8 +20,21 @@
     <script src="./assets/ui.js"></script>
     <script src="./assets/auth.js"></script>
     <script src="./assets/whatsapp.js"></script>
-  </head>
-  <body>
+</head>
+<body>
+    <!-- Status da Configuração do Servidor -->
+    <div id="serverStatus" class="server-status hidden">
+      <div class="server-status-content">
+        <div class="server-info">
+          <span class="server-icon">🖥️</span>
+          <div class="server-details">
+            <strong>Servidor:</strong> <span id="currentServerHost">Railway Cloud</span>
+            <small id="serverSource">Configuração automática - Não alterar</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tela de Login -->
     <main id="loginScreen" class="login-container">
       <section class="login-card">
@@ -68,7 +59,7 @@
             <h3>⚠️ Configuração Necessária</h3>
             <p>Para usar o WhatsApp Web, você precisa configurar os servidores primeiro.</p>
             <div class="config-buttons">
-              <a href="./setup-servidor.html" class="config-btn primary">�️ Configurar Servidor</a>
+              <a href="./setup-servidor.html" class="config-btn primary">🖥️ Configurar Servidor</a>
               <a href="./setup.html" class="config-btn">🔧 Config Avançada</a>
             </div>
           </div>
@@ -188,20 +179,20 @@
             <div class="message-input-area">
               <!-- File input oculto -->
               <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" multiple title="Selecionar arquivos para anexar" aria-label="Anexar arquivos">
-              
+
               <div class="message-input-container">
                 <button id="attachBtn" class="btn-icon" title="Anexar">📎</button>
                 <button id="voiceBtn" class="btn-icon voice-btn" title="Gravar áudio">🎤</button>
                 <button id="emojiBtn" class="btn-icon" title="Emojis">😊</button>
-                <input 
-                  type="text" 
-                  id="messageInput" 
-                  placeholder="Digite uma mensagem..." 
+                <input
+                  type="text"
+                  id="messageInput"
+                  placeholder="Digite uma mensagem..."
                   maxlength="1000"
                 />
                 <button id="sendBtn" class="btn-send" title="Enviar">📤</button>
               </div>
-              
+
               <!-- Seletor de Emojis -->
               <div id="emojiPicker" class="emoji-picker hidden">
                 <div class="emoji-picker-header">

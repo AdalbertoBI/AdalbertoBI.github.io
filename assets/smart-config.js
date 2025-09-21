@@ -1,65 +1,39 @@
 // WhatIntegra - Auto-Configuração de Servidor
-// Detecta automaticamente o melhor servidor baseado no contexto de acesso
+// Sistema automático que usa o IP público fixo do servidor
+
+// === CONFIGURAÇÃO FIXA DO SERVIDOR ===
+// Esta máquina (192.168.1.4) é sempre o servidor
+// IP público: 186.249.152.5 (configurado automaticamente)
+const SERVER_PUBLIC_IP = '186.249.152.5';
+const SERVER_LOCAL_IP = '192.168.1.4';
 
 // === AUTO-DETECÇÃO INTELIGENTE ===
 function autoDetectServerConfig() {
   const currentHostname = location.hostname;
   const isGitHubPages = currentHostname.includes('github.io');
-  const userAgent = navigator.userAgent;
-  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   
   console.log('🔍 Auto-detectando configuração de servidor...');
   console.log('📱 Acessando de:', currentHostname);
-  console.log('🖥️ Dispositivo:', isMobile ? 'Mobile' : 'Desktop');
+  console.log('🖥️ Servidor fixo configurado:', SERVER_PUBLIC_IP);
   
-  // Se está no GitHub Pages, precisa descobrir o IP do servidor
+  // Se está no GitHub Pages (qualquer dispositivo, qualquer rede)
+  // Se está no GitHub Pages (qualquer dispositivo, qualquer rede)
   if (isGitHubPages) {
-    // Para dispositivos móveis, priorizar IP público e orientações
-    if (isMobile) {
-      const mobileNetworkIPs = [
-        // Orientação: Configure seu IP público no roteador
-        '192.168.1.4',   // IP local da máquina (para referência)
-        'SEU-IP-PUBLICO', // Placeholder para IP público
-        '192.168.1.1',   // Gateway local
-        '192.168.0.1',   // Gateway comum alternativo
-      ];
-      
-      return {
-        strategy: 'github-pages-mobile-external',
-        suggestedIPs: mobileNetworkIPs,
-        needsUserConfiguration: true,
-        requiresPortForwarding: true,
-        isMobileExternal: true
-      };
-    }
-    
-    // Para desktop, sugerir IPs locais primeiro
-    const commonLocalIPs = [
-      '192.168.1.4',   // IP padrão do servidor
-      '192.168.1.1',   // Gateway comum
-      '192.168.0.1',   // Gateway comum
-      '192.168.1.100', // IP comum
-      '192.168.1.101',
-      '192.168.1.102',
-      '192.168.0.100',
-      '192.168.0.101',
-      '10.0.0.1',      // Redes corporativas
-      '172.16.0.1'     // Outras redes
-    ];
-    
     return {
-      strategy: 'github-pages-desktop',
-      suggestedIPs: commonLocalIPs,
-      needsUserConfiguration: true
+      strategy: 'github-pages-auto',
+      SERVER_HOST: SERVER_PUBLIC_IP,
+      needsUserConfiguration: false,
+      description: 'IP público automático do servidor'
     };
   }
   
-  // Se é localhost, usar localhost
+  // Se é localhost, usar IP local para desenvolvimento
   if (currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
     return {
       strategy: 'localhost',
-      SERVER_HOST: '127.0.0.1',
-      needsUserConfiguration: false
+      SERVER_HOST: SERVER_LOCAL_IP, // Usar IP local da máquina, não localhost
+      needsUserConfiguration: false,
+      description: 'Desenvolvimento local'
     };
   }
   
@@ -67,7 +41,8 @@ function autoDetectServerConfig() {
   return {
     strategy: 'direct-ip',
     SERVER_HOST: currentHostname,
-    needsUserConfiguration: false
+    needsUserConfiguration: false,
+    description: 'Acesso direto via IP'
   };
 }
 
@@ -75,47 +50,19 @@ function autoDetectServerConfig() {
 function getIntelligentServerConfig() {
   const autoConfig = autoDetectServerConfig();
   
-  // Configuração salva manualmente pelo usuário tem prioridade
-  const manualConfig = localStorage.getItem('whatintegra_server_host');
-  if (manualConfig && manualConfig.trim()) {
-    console.log('✅ Usando configuração manual:', manualConfig);
-    return {
-      SERVER_HOST: manualConfig.trim(),
-      AUTH_HTTP_PORT: 8765,
-      AUTH_HTTPS_PORT: 8766,
-      WHATSAPP_HTTP_PORT: 3001,
-      WHATSAPP_HTTPS_PORT: 3002,
-      source: 'manual'
-    };
-  }
+  console.log('🤖 Configuração automática detectada:', autoConfig.strategy);
+  console.log('🖥️ Servidor configurado para:', autoConfig.SERVER_HOST);
   
-  // Auto-configuração baseada no contexto
-  if (autoConfig.needsUserConfiguration) {
-    console.warn('⚠️ Acesso remoto detectado! Configuração necessária.');
-    console.log('💡 Sugestões de IP:', autoConfig.suggestedIPs);
-    
-    // Mostrar helper para configuração
-    showServerConfigHelper(autoConfig);
-    
-    // Usar o primeiro IP sugerido como fallback
-    return {
-      SERVER_HOST: autoConfig.suggestedIPs[0],
-      AUTH_HTTP_PORT: 8765,
-      AUTH_HTTPS_PORT: 8766,
-      WHATSAPP_HTTP_PORT: 3001,
-      WHATSAPP_HTTPS_PORT: 3002,
-      source: 'auto-fallback',
-      needsConfiguration: true
-    };
-  }
-  
+  // Sempre usar configuração automática (sem manual override)
+  // Esta máquina é sempre o servidor, não precisa de configuração manual
   return {
     SERVER_HOST: autoConfig.SERVER_HOST,
     AUTH_HTTP_PORT: 8765,
     AUTH_HTTPS_PORT: 8766,
     WHATSAPP_HTTP_PORT: 3001,
     WHATSAPP_HTTPS_PORT: 3002,
-    source: 'auto-detected'
+    source: autoConfig.strategy,
+    description: autoConfig.description
   };
 }
 

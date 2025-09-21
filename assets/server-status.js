@@ -6,45 +6,22 @@ function updateServerStatusDisplay() {
   const serverStatusEl = document.getElementById('serverStatus');
   const currentServerHostEl = document.getElementById('currentServerHost');
   const serverSourceEl = document.getElementById('serverSource');
-  const changeServerBtn = document.getElementById('changeServerBtn');
   
-  if (!serverStatusEl || !window.WhatIntegra?.serverConfig) {
+  if (!serverStatusEl) {
     return;
   }
   
-  const config = window.WhatIntegra.serverConfig;
-  
-  // Atualizar informações
+  // Configuração fixa para Railway Cloud
   if (currentServerHostEl) {
-    currentServerHostEl.textContent = config.SERVER_HOST;
+    currentServerHostEl.textContent = 'Railway Cloud';
   }
   
   if (serverSourceEl) {
-    const sourceText = {
-      'manual': '👤 Configuração manual',
-      'auto-detected': '🤖 Detectado automaticamente', 
-      'auto-fallback': '⚠️ Configuração temporária'
-    };
-    serverSourceEl.textContent = sourceText[config.source] || 'Configuração padrão';
+    serverSourceEl.textContent = 'Configuração automática - Não alterar';
   }
   
   // Mostrar status
   serverStatusEl.classList.remove('hidden');
-  
-  // Configurar botão de alteração
-  if (changeServerBtn) {
-    changeServerBtn.onclick = () => {
-      if (window.showServerConfigHelper) {
-        window.showServerConfigHelper({
-          strategy: 'manual-change',
-          suggestedIPs: ['192.168.1.100', '192.168.0.100', '10.0.0.100']
-        });
-      } else {
-        // Fallback para página de configuração
-        window.open('./setup-servidor.html', '_blank');
-      }
-    };
-  }
 }
 
 // === INICIALIZAR QUANDO DOM ESTIVER PRONTO ===
