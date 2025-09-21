@@ -921,6 +921,71 @@ code{
   background: linear-gradient(135deg, #20b358, #0f756b);
 }
 
+/* === SERVER STATUS ===*/
+.server-status {
+  margin: 16px 0;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 2px solid #0ea5e9;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.server-status.hidden {
+  display: none;
+}
+
+.server-status-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.server-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.server-icon {
+  font-size: 1.2em;
+}
+
+.server-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.server-details strong {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.server-details small {
+  color: #64748b;
+  font-size: 0.8em;
+}
+
+.btn-change-server {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-change-server:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.8; }

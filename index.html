@@ -1,7 +1,29 @@
 <!doctype html>
 <html lang="pt-br">
-  <head>
-    <meta charset="utf-8" />
+          <output id="status" class="status" aria-live="polite"></output>
+
+        <!-- Status da Configuração do Servidor -->
+        <div id="serverStatus" class="server-status hidden">
+          <div class="server-status-content">
+            <div class="server-info">
+              <span class="server-icon">🖥️</span>
+              <div class="server-details">
+                <strong>Servidor:</strong> <span id="currentServerHost">Detectando...</span>
+                <small id="serverSource">Configuração automática</small>
+              </div>
+            </div>
+            <button id="changeServerBtn" class="btn-change-server">📝 Alterar</button>
+          </div>
+        </div>
+
+        <div id="configAlert" class="config-alert hidden-alert">
+          <div class="alert-content">
+            <h3>⚠️ Configuração Necessária</h3>
+            <p>Para usar o WhatsApp Web, você precisa configurar os servidores primeiro.</p>
+            <div class="config-buttons">
+              <a href="./setup-servidor.html" class="config-btn primary">🖥️ Configurar Servidor</a>
+              <a href="./setup.html" class="config-btn">🔧 Config Avançada</a>
+            </div>  <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>WhatIntegra - WhatsApp Web</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +33,9 @@
     <link rel="stylesheet" href="./assets/link-preview.css" />
     
     <!-- WhatIntegra Modules -->
+    <script src="./assets/smart-config.js"></script>
     <script src="./assets/server-config.js"></script>
+    <script src="./assets/server-status.js"></script>
     <script src="./assets/config.js"></script>
     <script src="./assets/utils.js"></script>
     <script src="./assets/connectivity.js"></script>
