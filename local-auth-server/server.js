@@ -86,6 +86,16 @@ function readUsers() {
   }
 }
 
+function writeUsers(users) {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar usuários:', error);
+    return false;
+  }
+}
+
 app.get('/api/health', (_req, res) => {
   console.log('✅ Health check requested');
   res.json({ ok: true, message: 'Server is running', timestamp: new Date().toISOString() });
