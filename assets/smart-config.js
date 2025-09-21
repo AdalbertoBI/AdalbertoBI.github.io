@@ -3,8 +3,8 @@
 
 // === CONFIGURAÇÃO FIXA DO SERVIDOR ===
 // Esta máquina (192.168.1.4) é sempre o servidor
-// IP público: 186.249.152.5 (configurado automaticamente)
-const SERVER_PUBLIC_IP = '186.249.152.5';
+// Railway: wonderful-rebirth-production-c173.up.railway.app (configurado automaticamente)
+const SERVER_PUBLIC_IP = 'wonderful-rebirth-production-c173.up.railway.app';
 const SERVER_LOCAL_IP = '192.168.1.4';
 
 // === AUTO-DETECÇÃO INTELIGENTE ===

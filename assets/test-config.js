@@ -40,8 +40,8 @@ if (isCustomDomain) {
   API_URL = 'http://127.0.0.1:8765/api';
   WHATSAPP_URL = 'http://127.0.0.1:3001';
 } else if (isGitHub && !isLocalHttpServer) {
-  API_URL = 'https://186.249.152.5:8766/api';
-  WHATSAPP_URL = 'https://186.249.152.5:3002';
+  API_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/api';
+  WHATSAPP_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/whatsapp';
 } else if (isLocalHttpServer) {
   API_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/api';
   WHATSAPP_URL = 'https://adalbertobiwhatintegra-production.up.railway.app';

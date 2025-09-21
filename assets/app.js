@@ -24,9 +24,9 @@ if (isCustomDomain) {
     API_URL = prompt('🔗 Digite a URL do túnel Ngrok para o servidor de autenticação:\n(ex: https://abc123.ngrok-free.app/api)') || 'http://127.0.0.1:8765/api';
     WHATSAPP_URL = prompt('📱 Digite a URL do túnel Ngrok para o servidor WhatsApp:\n(ex: https://xyz789.ngrok-free.app)') || 'http://127.0.0.1:3001';
 } else if (isGitHub && !isLocalHttpServer) {
-    // GitHub Pages: usar HTTPS na porta 8766 (servidor de autenticação) e 3002 (servidor WhatsApp)
-    API_URL = 'https://186.249.152.5:8766/api';
-    WHATSAPP_URL = 'https://186.249.152.5:3002';
+    // GitHub Pages: usar Railway para autenticação e WhatsApp
+    API_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/api';
+    WHATSAPP_URL = 'https://wonderful-rebirth-production-c173.up.railway.app/whatsapp';
 } else {
     // Localhost ou http-server local: sempre usar HTTP na porta 8765 (servidor de autenticação) e 3001 (servidor WhatsApp)
     API_URL = 'http://127.0.0.1:8765/api';
