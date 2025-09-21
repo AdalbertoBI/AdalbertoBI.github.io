@@ -28,8 +28,8 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-const HTTPS_PORT = process.env.HTTPS_PORT || 3002;
+const PORT = process.env.WHATSAPP_PORT || (process.env.PORT ? parseInt(process.env.PORT) + 1000 : 3001);
+const HTTPS_PORT = process.env.WHATSAPP_HTTPS_PORT || (process.env.HTTPS_PORT ? parseInt(process.env.HTTPS_PORT) + 1000 : 3002);
 const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
 const DATA_DIR = process.env.WHATSAPP_DATA_DIR || path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');

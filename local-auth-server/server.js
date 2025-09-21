@@ -103,6 +103,47 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Webhook endpoints para Railway
+app.post('/webhooks/railway/deploy', express.raw({type: 'application/json'}), (req, res) => {
+  const payload = req.body;
+  const signature = req.headers['x-railway-signature'];
+  
+  try {
+    const event = JSON.parse(payload);
+    console.log('🚀 Railway Deploy Webhook:', {
+      type: event.type,
+      status: event.data?.status,
+      deployment_id: event.data?.id,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(200).json({ received: true, timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('❌ Railway webhook error:', error);
+    res.status(400).json({ error: 'Invalid payload' });
+  }
+});
+
+app.post('/webhooks/railway/volume', express.raw({type: 'application/json'}), (req, res) => {
+  const payload = req.body;
+  const signature = req.headers['x-railway-signature'];
+  
+  try {
+    const event = JSON.parse(payload);
+    console.log('💾 Railway Volume Webhook:', {
+      type: event.type,
+      usage: event.data?.usage,
+      service_id: event.data?.service_id,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(200).json({ received: true, timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('❌ Railway volume webhook error:', error);
+    res.status(400).json({ error: 'Invalid payload' });
+  }
+});
+
 // Rota específica para teste de conectividade do GitHub Pages
 app.get('/', (req, res) => {
   console.log('🏠 Root access from:', req.headers.origin || 'unknown');
@@ -152,6 +193,29 @@ app.get('/api/session', (req, res) => {
   } catch {
     res.status(401).json({ error: 'Token inválido' });
   }
+});
+
+// Rota temporária para registro de usuários (remover após configuração inicial)
+app.post('/api/register', async (req, res) => {
+  console.log('📝 Register attempt:', req.body);
+  
+  const { username, password, email } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username e password são obrigatórios' });
+  }
+  
+  const users = readUsers();
+  const existingUser = users.find(u => u.username.toLowerCase() === String(username).toLowerCase());
+  if (existingUser) {
+    return res.status(409).json({ error: 'Usuário já existe' });
+  }
+  
+  const passwordHash = await bcrypt.hash(password, 10);
+  users.push({ username, passwordHash, email: email || '', createdAt: new Date().toISOString() });
+  writeUsers(users);
+  
+  console.log('✅ User registered:', username);
+  res.json({ message: 'Usuário criado com sucesso', username });
 });
 
 // Usar HOST configurado anteriormente
