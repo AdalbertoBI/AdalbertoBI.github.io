@@ -27,9 +27,9 @@ function loadServerConfig() {
   // Tenta carregar configuração salva no navegador
   const savedHost = localStorage.getItem('whatintegra_server_host');
   
-  // Configuração padrão
+  // Configuração padrão (IP da máquina atual)
   const config = {
-    SERVER_HOST: '127.0.0.1',
+    SERVER_HOST: '192.168.1.4',
     AUTH_HTTP_PORT: 8765,
     AUTH_HTTPS_PORT: 8766,
     WHATSAPP_HTTP_PORT: 3001,

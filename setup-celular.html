@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>📱 WhatIntegra - Configuração para Celular</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <style>
+      .step-card {
+        background: #f8f9fa;
+        border-left: 4px solid #25d366;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+      }
+      .warning-card {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .info-card {
+        background: #e7f5ff;
+        border: 1px solid #339af0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .code {
+        background: #f1f3f4;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        margin: 10px 0;
+      }
+      .port-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+      .port-table th, .port-table td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      .port-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="login-container">
+      <section class="login-card" style="max-width: 800px;">
+        <h1>📱 Configuração para Celular</h1>
+        <p><strong>Acesso externo ao WhatIntegra via celular</strong></p>
+        
+        <div class="warning-card">
+          <h3>⚠️ Importante</h3>
+          <p>Esta configuração é necessária quando o celular está em uma rede diferente da máquina que roda os servidores (ex: usando dados móveis ou Wi-Fi externo).</p>
+        </div>
+
+        <div class="step-card">
+          <h3>🌐 Passo 1: Descobrir seu IP Público</h3>
+          <p>Na máquina onde roda o servidor, abra o navegador e:</p>
+          <ol>
+            <li>Pesquise no Google: <strong>"qual meu ip"</strong></li>
+            <li>Anote o número que aparece (ex: <code>203.0.113.42</code>)</li>
+            <li>Este é seu IP público que o celular usará para conectar</li>
+          </ol>
+          
+          <div class="info-card">
+            <strong>💡 Dica:</strong> O IP público pode mudar se seu provedor usar IP dinâmico. Considere usar serviços como No-IP ou DynDNS para um domínio fixo.
+          </div>
+        </div>
+
+        <div class="step-card">
+          <h3>🔧 Passo 2: Configurar Port Forwarding</h3>
+          <p>Acesse as configurações do seu roteador (geralmente em <code>192.168.1.1</code>) e configure o redirecionamento de portas:</p>
+          
+          <table class="port-table">
+            <thead>
+              <tr>
+                <th>Serviço</th>
+                <th>Porta Externa</th>
+                <th>IP Interno</th>
+                <th>Porta Interna</th>
+                <th>Protocolo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Auth Server HTTP</td>
+                <td>8765</td>
+                <td>192.168.1.4</td>
+                <td>8765</td>
+                <td>TCP</td>
+              </tr>
+              <tr>
+                <td>Auth Server HTTPS</td>
+                <td>8766</td>
+                <td>192.168.1.4</td>
+                <td>8766</td>
+                <td>TCP</td>
+              </tr>
+              <tr>
+                <td>WhatsApp HTTP</td>
+                <td>3001</td>
+                <td>192.168.1.4</td>
+                <td>3001</td>
+                <td>TCP</td>
+              </tr>
+              <tr>
+                <td>WhatsApp HTTPS</td>
+                <td>3002</td>
+                <td>192.168.1.4</td>
+                <td>3002</td>
+                <td>TCP</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="warning-card">
+            <h4>🔒 Atenção de Segurança</h4>
+            <p>Abrir portas expõe seus serviços na internet. Recomendações:</p>
+            <ul>
+              <li>Use senhas fortes no sistema</li>
+              <li>Configure firewall no servidor</li>
+              <li>Monitore logs de acesso</li>
+              <li>Considere usar VPN como alternativa mais segura</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <h3>📱 Passo 3: Configurar no Celular</h3>
+          <p>No celular, acesse a página do WhatIntegra e:</p>
+          <ol>
+            <li>Quando aparecer o modal de configuração</li>
+            <li>Digite seu <strong>IP público</strong> descoberto no Passo 1</li>
+            <li>Clique em "Aplicar"</li>
+            <li>O sistema tentará conectar usando as portas configuradas</li>
+          </ol>
+          
+          <div class="code">
+            <strong>Exemplo de configuração:</strong><br>
+            IP Público: 203.0.113.42<br>
+            URLs geradas:<br>
+            • Auth: http://203.0.113.42:8765<br>
+            • WhatsApp: http://203.0.113.42:3001
+          </div>
+        </div>
+
+        <div class="step-card">
+          <h3>🧪 Passo 4: Testar Conexão</h3>
+          <p>Para verificar se está funcionando:</p>
+          <ol>
+            <li>No celular, tente acessar: <code>http://SEU-IP-PUBLICO:8765/api/health</code></li>
+            <li>Deve retornar uma mensagem JSON de sucesso</li>
+            <li>Se não funcionar, verifique:
+              <ul>
+                <li>Port forwarding configurado corretamente</li>
+                <li>Firewall do Windows permitindo as portas</li>
+                <li>Servidores rodando na máquina</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+
+        <div class="info-card">
+          <h3>🔄 Alternativas Mais Fáceis</h3>
+          <p>Se a configuração acima for complexa, considere:</p>
+          <ul>
+            <li><strong>VPN:</strong> Configure uma VPN para acessar a rede local remotamente</li>
+            <li><strong>TeamViewer:</strong> Use para acessar o computador remotamente</li>
+            <li><strong>Ngrok:</strong> Serviço que cria túneis públicos temporários</li>
+            <li><strong>Cloudflare Tunnel:</strong> Alternativa gratuita para exposição segura</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="index.html" class="btn-primary">🏠 Voltar ao WhatIntegra</a>
+          <a href="setup.html" class="btn-secondary">⚙️ Configuração Avançada</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

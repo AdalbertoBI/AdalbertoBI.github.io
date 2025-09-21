@@ -5,14 +5,37 @@
 function autoDetectServerConfig() {
   const currentHostname = location.hostname;
   const isGitHubPages = currentHostname.includes('github.io');
+  const userAgent = navigator.userAgent;
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   
   console.log('🔍 Auto-detectando configuração de servidor...');
   console.log('📱 Acessando de:', currentHostname);
+  console.log('🖥️ Dispositivo:', isMobile ? 'Mobile' : 'Desktop');
   
   // Se está no GitHub Pages, precisa descobrir o IP do servidor
   if (isGitHubPages) {
-    // Tentar IPs comuns de rede local
+    // Para dispositivos móveis, priorizar IP público e orientações
+    if (isMobile) {
+      const mobileNetworkIPs = [
+        // Orientação: Configure seu IP público no roteador
+        '192.168.1.4',   // IP local da máquina (para referência)
+        'SEU-IP-PUBLICO', // Placeholder para IP público
+        '192.168.1.1',   // Gateway local
+        '192.168.0.1',   // Gateway comum alternativo
+      ];
+      
+      return {
+        strategy: 'github-pages-mobile-external',
+        suggestedIPs: mobileNetworkIPs,
+        needsUserConfiguration: true,
+        requiresPortForwarding: true,
+        isMobileExternal: true
+      };
+    }
+    
+    // Para desktop, sugerir IPs locais primeiro
     const commonLocalIPs = [
+      '192.168.1.4',   // IP padrão do servidor
       '192.168.1.1',   // Gateway comum
       '192.168.0.1',   // Gateway comum
       '192.168.1.100', // IP comum
@@ -25,7 +48,7 @@ function autoDetectServerConfig() {
     ];
     
     return {
-      strategy: 'github-pages-mobile',
+      strategy: 'github-pages-desktop',
       suggestedIPs: commonLocalIPs,
       needsUserConfiguration: true
     };
@@ -98,6 +121,9 @@ function getIntelligentServerConfig() {
 
 // === HELPER VISUAL ===
 function showServerConfigHelper(autoConfig) {
+  // Verificar se é acesso móvel externo
+  const isMobileExternal = autoConfig.isMobileExternal;
+  
   // Criar modal de configuração rápida
   const modal = document.createElement('div');
   modal.id = 'server-config-modal';
@@ -114,30 +140,53 @@ function showServerConfigHelper(autoConfig) {
       justify-content: center;
       z-index: 9999;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-y: auto;
     ">
       <div style="
         background: white;
         padding: 30px;
         border-radius: 16px;
-        max-width: 400px;
+        max-width: ${isMobileExternal ? '500px' : '400px'};
         width: 90%;
         text-align: center;
         box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        margin: 20px;
       ">
-        <h2 style="margin: 0 0 20px; color: #333;">🖥️ Configuração de Servidor</h2>
+        <h2 style="margin: 0 0 20px; color: #333;">
+          ${isMobileExternal ? '� Acesso Móvel Externo' : '�🖥️ Configuração de Servidor'}
+        </h2>
+        
+        ${isMobileExternal ? `
+          <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left;">
+            <h3 style="margin: 0 0 10px; color: #d68910;">⚠️ Configuração Necessária</h3>
+            <p style="margin: 0; color: #7d6608; font-size: 14px;">
+              Seu celular está em rede externa. Para acessar, você precisa:
+            </p>
+            <ol style="margin: 10px 0 0 20px; color: #7d6608; font-size: 14px;">
+              <li><strong>Descobrir seu IP público:</strong> Google "qual meu ip"</li>
+              <li><strong>Configurar port forwarding no roteador:</strong><br>
+                  - Portas: 8765, 8766, 3001, 3002<br>
+                  - Destino: 192.168.1.4 (máquina do servidor)</li>
+              <li><strong>Inserir IP público abaixo</strong></li>
+            </ol>
+          </div>
+        ` : ''}
+        
         <p style="margin: 0 0 20px; color: #666;">
-          Você está acessando de um dispositivo remoto.<br>
-          Qual é o IP da máquina que roda os servidores?
+          ${isMobileExternal 
+            ? 'Digite o IP público configurado com port forwarding:'
+            : 'Você está acessando de um dispositivo remoto.<br>Qual é o IP da máquina que roda os servidores?'
+          }
         </p>
         
         <div style="margin: 20px 0;">
           <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">
-            IP do Servidor:
+            ${isMobileExternal ? 'IP Público do Servidor:' : 'IP do Servidor:'}
           </label>
           <input 
             id="quick-server-ip" 
             type="text" 
-            placeholder="Ex: 192.168.1.100"
+            placeholder="${isMobileExternal ? 'Ex: 203.0.113.42 (seu IP público)' : 'Ex: 192.168.1.100'}"
             style="
               width: 100%;
               padding: 12px;
@@ -149,11 +198,22 @@ function showServerConfigHelper(autoConfig) {
           />
         </div>
         
-        <div style="margin: 20px 0; font-size: 14px; color: #888;">
-          Sugestões: ${autoConfig.suggestedIPs.slice(0, 3).join(', ')}
-        </div>
+        ${!isMobileExternal ? `
+          <div style="margin: 20px 0; font-size: 14px; color: #888;">
+            Sugestões: ${autoConfig.suggestedIPs.slice(0, 3).join(', ')}
+          </div>
+        ` : `
+          <div style="background: #e7f5ff; border: 1px solid #339af0; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: left;">
+            <h4 style="margin: 0 0 10px; color: #1864ab;">💡 Como encontrar seu IP público:</h4>
+            <p style="margin: 0; color: #1864ab; font-size: 14px;">
+              1. No Google, pesquise: <strong>"qual meu ip"</strong><br>
+              2. Copie o número que aparece (ex: 203.0.113.42)<br>
+              3. Cole no campo acima
+            </p>
+          </div>
+        `}
         
-        <div style="display: flex; gap: 10px; justify-content: center;">
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
           <button 
             onclick="applyQuickConfig()" 
             style="
@@ -183,6 +243,27 @@ function showServerConfigHelper(autoConfig) {
             ❌ Cancelar
           </button>
         </div>
+        
+        ${isMobileExternal ? `
+          <div style="margin-top: 15px;">
+            <a 
+              href="./setup-celular.html" 
+              target="_blank"
+              style="
+                display: inline-block;
+                background: #f8f9fa;
+                color: #495057;
+                text-decoration: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-size: 12px;
+                border: 1px solid #dee2e6;
+              "
+            >
+              📚 Guia Completo para Celular
+            </a>
+          </div>
+        ` : ''}
         
         <div style="margin-top: 20px; font-size: 12px; color: #999;">
           💡 Dica: Vá em <strong>setup-servidor.html</strong> para configuração detalhada

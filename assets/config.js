@@ -2,9 +2,9 @@
 // Configurações e constantes da aplicação
 
 // === CONFIGURAÇÃO DO SERVIDOR ===
-// Obter configuração do servidor (definida em server-config.js)
+// Obter configuração do servidor (definida pelo sistema inteligente)
 const serverConfig = window.WhatIntegra?.serverConfig || {
-  SERVER_HOST: '127.0.0.1', // fallback
+  SERVER_HOST: '192.168.1.4', // IP padrão da máquina atual
   AUTH_HTTP_PORT: 8765,
   AUTH_HTTPS_PORT: 8766,
   WHATSAPP_HTTP_PORT: 3001,
